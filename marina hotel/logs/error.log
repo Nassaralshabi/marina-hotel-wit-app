@@ -1,0 +1,3 @@
+[30-Jun-2025 02:02:01 Asia/Aden] [2025-06-30 02:02:01] استثناء غير معالج: Call to undefined function create_payment_message() في D:\xampp\htdocs\marina hotel\admin\bookings\payment.php على السطر 107
+Stack trace:
+#0 {main}
