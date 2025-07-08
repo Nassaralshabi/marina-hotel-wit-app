@@ -1,21 +1,16 @@
 <?php
-// First, let's fix the error handling at the beginning
+session_start();
 include_once '../includes/db.php';
-include_once '../includes/header.php';
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 
-// Check database connection
+// التحقق من اتصال قاعدة البيانات
 if (!$conn) {
     die("<div class='alert alert-danger text-center'>فشل الاتصال بقاعدة البيانات: " . mysqli_connect_error() . "</div>");
 }
 
-// Get room data from the 'rooms' table
-$sql = "SELECT room_number, status FROM rooms";
+// جلب بيانات الغرف
+$sql = "SELECT room_number, status FROM rooms ORDER BY room_number";
 $result = mysqli_query($conn, $sql);
 
-// Check for query errors
 if (!$result) {
     die("<div class='alert alert-danger text-center'>خطأ في الاستعلام: " . mysqli_error($conn) . "</div>");
 }
@@ -27,27 +22,37 @@ if (mysqli_num_rows($result) > 0) {
     }
 }
 
-// جلب بيانات الصندوق
-$cash_data = [
-    'today_income' => 0,
-    'today_expense' => 0,
-    'pending_notes' => 0
+// جلب إحصائيات سريعة
+$stats = [
+    'total_rooms' => 0,
+    'occupied_rooms' => 0,
+    'available_rooms' => 0,
+    'today_bookings' => 0,
+    'today_payments' => 0
 ];
 
-// محاولة جلب بيانات الصندوق إذا كانت الجداول موجودة
-$check_cash_table = mysqli_query($conn, "SHOW TABLES LIKE 'cash_transactions'");
-if (mysqli_num_rows($check_cash_table) > 0) {
-    $income_query = "SELECT COALESCE(SUM(amount), 0) as total FROM cash_transactions WHERE transaction_type='income' AND DATE(transaction_time) = CURDATE()";
-    $income_result = mysqli_query($conn, $income_query);
-    if ($income_result && mysqli_num_rows($income_result) > 0) {
-        $cash_data['today_income'] = mysqli_fetch_assoc($income_result)['total'];
+// إحصائيات الغرف
+$stats['total_rooms'] = count($rooms);
+foreach ($rooms as $room) {
+    if ($room['status'] == 'محجوزة') {
+        $stats['occupied_rooms']++;
+    } else {
+        $stats['available_rooms']++;
     }
-    
-    $expense_query = "SELECT COALESCE(SUM(amount), 0) as total FROM cash_transactions WHERE transaction_type='expense' AND DATE(transaction_time) = CURDATE()";
-    $expense_result = mysqli_query($conn, $expense_query);
-    if ($expense_result && mysqli_num_rows($expense_result) > 0) {
-        $cash_data['today_expense'] = mysqli_fetch_assoc($expense_result)['total'];
-    }
+}
+
+// حجوزات اليوم
+$today_bookings_query = "SELECT COUNT(*) as count FROM bookings WHERE DATE(created_at) = CURDATE()";
+$today_bookings_result = mysqli_query($conn, $today_bookings_query);
+if ($today_bookings_result) {
+    $stats['today_bookings'] = mysqli_fetch_assoc($today_bookings_result)['count'];
+}
+
+// مدفوعات اليوم
+$today_payments_query = "SELECT COALESCE(SUM(amount), 0) as total FROM payment WHERE DATE(payment_date) = CURDATE()";
+$today_payments_result = mysqli_query($conn, $today_payments_query);
+if ($today_payments_result) {
+    $stats['today_payments'] = mysqli_fetch_assoc($today_payments_result)['total'];
 }
 
 // جلب التنبيهات النشطة إذا كان الجدول موجوداً
@@ -80,415 +85,502 @@ if (mysqli_num_rows($check_notes_table) > 0) {
 }
 
 mysqli_close($conn);
+
+// تضمين الهيدر
+include '../includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة التحكم الرئيسية</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>assets/css/dash.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        /* إضافة أنماط للأقسام الجديدة */
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+
+<style>
+    /* أنماط خاصة بلوحة التحكم */
+    .dashboard-container {
+        padding: 20px 0;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border-left: 4px solid;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .stat-card.rooms-total {
+        border-left-color: #3498db;
+    }
+
+    .stat-card.rooms-occupied {
+        border-left-color: #e74c3c;
+    }
+
+    .stat-card.rooms-available {
+        border-left-color: #2ecc71;
+    }
+
+    .stat-card.bookings-today {
+        border-left-color: #f39c12;
+    }
+
+    .stat-card.payments-today {
+        border-left-color: #9b59b6;
+    }
+
+    .stat-card .icon {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+        opacity: 0.8;
+    }
+
+    .stat-card.rooms-total .icon { color: #3498db; }
+    .stat-card.rooms-occupied .icon { color: #e74c3c; }
+    .stat-card.rooms-available .icon { color: #2ecc71; }
+    .stat-card.bookings-today .icon { color: #f39c12; }
+    .stat-card.payments-today .icon { color: #9b59b6; }
+
+    .stat-card .value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        color: #2c3e50;
+    }
+
+    .stat-card .label {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #6c757d;
+    }
+
+    /* أنماط الطوابق والغرف */
+    .floor-container {
+        margin-bottom: 25px;
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .floor-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .floor-rooms {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 15px;
+    }
+
+    .room-btn {
+        background: white;
+        border: 2px solid;
+        border-radius: 10px;
+        padding: 15px 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-align: center;
+        min-height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .room-btn.available-btn {
+        border-color: #2ecc71;
+        color: #2ecc71;
+        background: linear-gradient(135deg, #fff 0%, #f0fff4 100%);
+    }
+
+    .room-btn.available-btn:hover {
+        background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(46, 204, 113, 0.3);
+    }
+
+    .room-btn.occupied-btn {
+        border-color: #e74c3c;
+        color: #e74c3c;
+        background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
+        cursor: not-allowed;
+    }
+
+    .room-btn.occupied-btn:hover {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+    }
+
+    /* أنماط التنبيهات */
+    .alerts-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .section-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .alerts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 15px;
+    }
+
+    .alert-card {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        border-left: 4px solid;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+
+    .alert-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+
+    .alert-card.alert-high { border-left-color: #dc3545; }
+    .alert-card.alert-medium { border-left-color: #fd7e14; }
+    .alert-card.alert-low { border-left-color: #198754; }
+
+    .alert-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .alert-info strong {
+        color: #2c3e50;
+        font-size: 1rem;
+    }
+
+    .guest-name {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .alert-priority {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .alert-priority.alert-high { color: #dc3545; }
+    .alert-priority.alert-medium { color: #fd7e14; }
+    .alert-priority.alert-low { color: #198754; }
+
+    .alert-content {
+        color: #495057;
+        line-height: 1.5;
+        margin-bottom: 10px;
+    }
+
+    .alert-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #eee;
+        padding-top: 10px;
+        font-size: 0.85rem;
+    }
+
+    /* أنماط responsive */
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .floor-rooms {
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
             gap: 10px;
-            margin-bottom: 15px;
         }
         
-        .stat-card {
-            background-color: #fff;
-            border-radius: 8px;
-            padding: 10px;
-            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            transition: all 0.3s ease;
+        .room-btn {
+            padding: 10px 5px;
+            min-height: 50px;
+            font-size: 0.9rem;
         }
         
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        .alerts-grid {
+            grid-template-columns: 1fr;
         }
-        
-        .stat-card.finance {
-            border-top: 3px solid #f39c12;
-        }
-        
-        .stat-card.notes {
-            border-top: 3px solid #9b59b6;
-        }
-        
-        .stat-card .value {
-            font-size: 18px;
-            font-weight: bold;
-            margin: 5px 0;
-        }
-        
-        .stat-card .icon {
-            font-size: 22px;
-            margin-bottom: 5px;
-            color: #3498db;
-        }
-        
-        .stat-card h3 {
-            font-size: 14px;
-            margin-bottom: 5px;
-        }
-        
-        .stat-card.finance .icon {
-            color: #f39c12;
-        }
-        
-        .stat-card.notes .icon {
-            color: #9b59b6;
-        }
-        
-        .stat-card small {
-            font-size: 11px;
-        }
-        
-        .section-title {
-            margin: 25px 0 15px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #eee;
-            color: #2c3e50;
-            font-size: 1.3rem;
-        }
+    }
+</style>
 
-        /* أنماط التنبيهات */
-        .alerts-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 10px;
-            margin-bottom: 20px;
-        }
+<div class="dashboard-container">
+    <div class="container">
+        <!-- عنوان لوحة التحكم -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="text-center">
+                    <h1 class="display-5 fw-bold text-primary mb-2">
+                        <i class="fas fa-tachometer-alt me-3"></i>لوحة التحكم الرئيسية
+                    </h1>
+                    <p class="lead text-muted">مرحباً بك في نظام إدارة فندق مارينا</p>
+                </div>
+            </div>
+        </div>
 
-        .alert-card {
-            background: #fff;
-            border-radius: 6px;
-            padding: 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-            border-left: 3px solid;
-            transition: all 0.3s ease;
-            font-size: 0.85em;
-        }
+        <!-- الإحصائيات السريعة -->
+        <div class="stats-grid">
+            <div class="stat-card rooms-total">
+                <div class="icon">
+                    <i class="fas fa-door-open"></i>
+                </div>
+                <div class="value"><?= $stats['total_rooms'] ?></div>
+                <div class="label">إجمالي الغرف</div>
+            </div>
+            
+            <div class="stat-card rooms-occupied">
+                <div class="icon">
+                    <i class="fas fa-bed"></i>
+                </div>
+                <div class="value"><?= $stats['occupied_rooms'] ?></div>
+                <div class="label">غرف محجوزة</div>
+            </div>
+            
+            <div class="stat-card rooms-available">
+                <div class="icon">
+                    <i class="fas fa-door-closed"></i>
+                </div>
+                <div class="value"><?= $stats['available_rooms'] ?></div>
+                <div class="label">غرف متاحة</div>
+            </div>
+            
+            <div class="stat-card bookings-today">
+                <div class="icon">
+                    <i class="fas fa-calendar-plus"></i>
+                </div>
+                <div class="value"><?= $stats['today_bookings'] ?></div>
+                <div class="label">حجوزات اليوم</div>
+            </div>
+            
+            <div class="stat-card payments-today">
+                <div class="icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="value"><?= number_format($stats['today_payments'], 0) ?></div>
+                <div class="label">مدفوعات اليوم (ريال)</div>
+            </div>
+        </div>
 
-        .alert-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        .alert-card.alert-high {
-            border-left-color: #dc3545;
-            background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
-        }
-
-        .alert-card.alert-medium {
-            border-left-color: #fd7e14;
-            background: linear-gradient(135deg, #fff 0%, #fff8f0 100%);
-        }
-
-        .alert-card.alert-low {
-            border-left-color: #198754;
-            background: linear-gradient(135deg, #fff 0%, #f0fff4 100%);
-        }
-
-        .alert-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
-        }
-
-        .alert-info strong {
-            color: #2c3e50;
-            font-size: 0.95em;
-            display: block;
-        }
-
-        .guest-name {
-            color: #6c757d;
-            font-size: 0.8em;
-            display: block;
-            margin-top: 2px;
-        }
-
-        .alert-priority {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            font-size: 0.75em;
-            font-weight: bold;
-        }
-
-        .alert-priority.alert-high i,
-        .alert-card.alert-high .alert-priority {
-            color: #dc3545;
-        }
-
-        .alert-priority.alert-medium i,
-        .alert-card.alert-medium .alert-priority {
-            color: #fd7e14;
-        }
-
-        .alert-priority.alert-low i,
-        .alert-card.alert-low .alert-priority {
-            color: #198754;
-        }
-
-        .alert-content {
-            color: #495057;
-            line-height: 1.4;
-            margin-bottom: 8px;
-            padding: 4px 0;
-            font-size: 0.9em;
-            max-height: 60px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .alert-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-top: 1px solid #eee;
-            padding-top: 6px;
-            font-size: 0.75em;
-        }
-
-        .alert-footer .btn {
-            font-size: 0.7em;
-            padding: 2px 6px;
-        }
-
-        /* تنسيق العنوان الرئيسي */
-        .dashboard-title {
-            color: #2c3e50;
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .dashboard-subtitle {
-            color: #6c757d;
-            font-size: 1.1rem;
-            font-weight: 400;
-            margin-bottom: 1.5rem;
-        }
-
-
-
-        /* أنماط أزرار التنقل */
-        .nav-btn {
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-            color: white;
-            padding: 12px 20px;
-            margin: 6px;
-            border-radius: 25px;
-            text-decoration: none;
-            font-size: 0.9em;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            box-shadow: 0 3px 10px rgba(76, 175, 80, 0.3);
-            border: 2px solid transparent;
-        }
-
-        .nav-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-            color: white;
-            text-decoration: none;
-            border-color: rgba(255,255,255,0.3);
-            background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
-        }
-
-        .nav-btn i {
-            margin-left: 8px;
-            font-size: 1.1em;
-        }
-
-
-    </style>
-</head>
-<body>
-
-
-    <main class="dashboard-container">
-        <div class="container">
-            <!-- زر الإعدادات الرئيسي -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h2 class="mb-0">
-                            <i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم الرئيسية
-                        </h2>
-                        <a href="settings/index.php" class="btn btn-primary btn-lg">
-                            <i class="fas fa-cogs me-2"></i>الإعدادات الرئيسية
+        <!-- التنبيهات النشطة -->
+        <?php if (!empty($active_alerts)): ?>
+        <div class="alerts-section">
+            <h3 class="section-title">
+                <i class="fas fa-bell text-warning"></i> التنبيهات النشطة
+                <span class="badge bg-danger ms-2"><?= count($active_alerts) ?></span>
+            </h3>
+            <div class="alerts-grid">
+                <?php foreach ($active_alerts as $alert): ?>
+                <div class="alert-card alert-<?= $alert['alert_type'] ?>">
+                    <div class="alert-header">
+                        <div class="alert-info">
+                            <strong>غرفة <?= htmlspecialchars($alert['room_number']) ?></strong>
+                            <div class="guest-name"><?= htmlspecialchars($alert['guest_name']) ?></div>
+                        </div>
+                        <div class="alert-priority alert-<?= $alert['alert_type'] ?>">
+                            <?php
+                            $priority_icons = [
+                                'high' => 'fas fa-exclamation-triangle',
+                                'medium' => 'fas fa-exclamation-circle',
+                                'low' => 'fas fa-info-circle'
+                            ];
+                            $priority_labels = [
+                                'high' => 'عالي',
+                                'medium' => 'متوسط',
+                                'low' => 'منخفض'
+                            ];
+                            ?>
+                            <i class="<?= $priority_icons[$alert['alert_type']] ?>"></i>
+                            <span><?= $priority_labels[$alert['alert_type']] ?></span>
+                        </div>
+                    </div>
+                    <div class="alert-content">
+                        <?= htmlspecialchars($alert['note_text']) ?>
+                    </div>
+                    <div class="alert-footer">
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i>
+                            <?= date('Y-m-d H:i', strtotime($alert['created_at'])) ?>
+                        </small>
+                        <a href="bookings/add_note.php?booking_id=<?= $alert['booking_id'] ?>"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit"></i> إدارة
                         </a>
                     </div>
                 </div>
+                <?php endforeach; ?>
             </div>
+        </div>
+        <?php endif; ?>
 
-            <!-- قسم التنبيهات النشطة -->
-            <?php if (!empty($active_alerts)): ?>
-            <div class="alerts-section mb-4">
-                <h3 class="section-title">
-                    <i class="fas fa-bell text-warning"></i> التنبيهات النشطة
-                    <span class="badge bg-danger ms-2"><?= count($active_alerts) ?></span>
-                </h3>
-                <div class="alerts-container">
-                    <?php foreach ($active_alerts as $alert): ?>
-                    <div class="alert-card alert-<?= $alert['alert_type'] ?>">
-                        <div class="alert-header">
-                            <div class="alert-info">
-                                <strong>غرفة <?= htmlspecialchars($alert['room_number']) ?></strong>
-                                <span class="guest-name"><?= htmlspecialchars($alert['guest_name']) ?></span>
-                            </div>
-                            <div class="alert-priority">
-                                <?php
-                                $priority_text = '';
-                                $priority_icon = '';
-                                switch($alert['alert_type']) {
-                                    case 'high':
-                                        $priority_text = 'عالي';
-                                        $priority_icon = 'fas fa-exclamation-triangle';
-                                        break;
-                                    case 'medium':
-                                        $priority_text = 'متوسط';
-                                        $priority_icon = 'fas fa-exclamation-circle';
-                                        break;
-                                    case 'low':
-                                        $priority_text = 'منخفض';
-                                        $priority_icon = 'fas fa-info-circle';
-                                        break;
-                                }
-                                ?>
-                                <i class="<?= $priority_icon ?>"></i>
-                                <span><?= $priority_text ?></span>
-                            </div>
-                        </div>
-                        <div class="alert-content">
-                            <?= htmlspecialchars($alert['note_text']) ?>
-                        </div>
-                        <div class="alert-footer">
-                            <small class="text-muted">
-                                <i class="fas fa-clock"></i>
-                                <?= date('Y-m-d H:i', strtotime($alert['created_at'])) ?>
-                            </small>
-                            <a href="bookings/add_note.php?booking_id=<?= $alert['booking_id'] ?>"
-                               class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-edit"></i> إدارة
-                            </a>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-            <?php endif; ?>
-
-
-
-            <!-- عرض الغرف حسب الطوابق -->
-            <h3 class="section-title"><i class="fas fa-door-open"></i> حالة الغرف</h3>
+        <!-- عرض الغرف حسب الطوابق -->
+        <div class="floor-container">
+            <h3 class="section-title">
+                <i class="fas fa-building"></i> حالة الغرف حسب الطوابق
+            </h3>
             <div id="rooms-container">
                 <!-- سيتم إنشاء هذا القسم ديناميكياً بواسطة JavaScript -->
             </div>
         </div>
-    </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // تحويل بيانات الغرف من PHP إلى JavaScript
-        const roomsData = <?php echo json_encode($rooms); ?>;
-        
-        // تنظيم الغرف حسب الطوابق
-        function organizeRoomsByFloor(rooms) {
-            const floors = {};
-            
-            rooms.forEach(room => {
-                // استخراج رقم الطابق من رقم الغرفة (الرقم الأول)
-                const floorNumber = room.room_number.charAt(0);
-                
-                if (!floors[floorNumber]) {
-                    floors[floorNumber] = [];
-                }
-                
-                floors[floorNumber].push(room);
-            });
-            
-            // ترتيب الغرف في كل طابق
-            for (const floor in floors) {
-                floors[floor].sort((a, b) => {
-                    return parseInt(a.room_number) - parseInt(b.room_number);
-                });
-            }
-            
-            return floors;
-        }
-        
-        // عرض الغرف حسب الطوابق
-        function displayRoomsByFloor() {
-            const roomsContainer = document.getElementById('rooms-container');
-            roomsContainer.innerHTML = '';
-            
-            const floors = organizeRoomsByFloor(roomsData);
-            
-            // ترتيب الطوابق تصاعدياً
-            const sortedFloors = Object.keys(floors).sort();
-            
-            sortedFloors.forEach(floor => {
-                const floorContainer = document.createElement('div');
-                floorContainer.className = 'floor-container';
-                
-                const floorTitle = document.createElement('div');
-                floorTitle.className = 'floor-title';
-                floorTitle.innerHTML = `<i class="fas fa-building me-2"></i> الطابق ${floor}`;
-                
-                const floorRooms = document.createElement('div');
-                floorRooms.className = 'floor-rooms';
-                
-                floors[floor].forEach(room => {
-                    const roomButton = document.createElement('button');
-                    roomButton.className = `room-btn ${room.status === 'شاغرة' ? 'available-btn' : 'occupied-btn'}`;
-                    roomButton.setAttribute('data-status', room.status);
-                    roomButton.setAttribute('data-room-number', room.room_number);
-                    roomButton.onclick = function() {
-                        handleRoomClick(room.room_number, room.status);
-                    };
-                    roomButton.textContent = room.room_number;
-                    
-                    floorRooms.appendChild(roomButton);
-                });
-                
-                floorContainer.appendChild(floorTitle);
-                floorContainer.appendChild(floorRooms);
-                roomsContainer.appendChild(floorContainer);
-            });
-        }
+        <!-- أزرار التنقل السريع -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="text-center">
+                    <h4 class="mb-3">التنقل السريع</h4>
+                    <div class="d-flex flex-wrap justify-content-center gap-3">
+                        <a href="bookings/add2.php" class="btn btn-success btn-lg">
+                            <i class="fas fa-plus-circle me-2"></i>حجز جديد
+                        </a>
+                        <a href="bookings/list.php" class="btn btn-primary btn-lg">
+                            <i class="fas fa-list me-2"></i>قائمة الحجوزات
+                        </a>
+                        <a href="reports.php" class="btn btn-info btn-lg">
+                            <i class="fas fa-chart-bar me-2"></i>التقارير
+                        </a>
+                        <a href="whatsapp_manager.php" class="btn btn-warning btn-lg">
+                            <i class="fab fa-whatsapp me-2"></i>إدارة الواتساب
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        // معالجة النقر على الغرفة
-        function handleRoomClick(roomNumber, status) {
-            if (status === 'شاغرة') {
-                // توجيه المستخدم إلى صفحة تسجيل الحجز
-                window.location.href = `bookings/add.php?room_number=${roomNumber}`;
-            } else {
-                alert("هذه الغرفة محجوزة ولا يمكن حجزها.");
-            }
+<script>
+// تحويل بيانات الغرف من PHP إلى JavaScript
+const roomsData = <?php echo json_encode($rooms); ?>;
+
+// تنظيم الغرف حسب الطوابق
+function organizeRoomsByFloor(rooms) {
+    const floors = {};
+    
+    rooms.forEach(room => {
+        // استخراج رقم الطابق من رقم الغرفة (الرقم الأول)
+        const floorNumber = room.room_number.charAt(0);
+        
+        if (!floors[floorNumber]) {
+            floors[floorNumber] = [];
         }
         
-        // تهيئة العرض الأولي
-        document.addEventListener('DOMContentLoaded', () => {
-            displayRoomsByFloor();
+        floors[floorNumber].push(room);
+    });
+    
+    // ترتيب الغرف في كل طابق
+    for (const floor in floors) {
+        floors[floor].sort((a, b) => {
+            return parseInt(a.room_number) - parseInt(b.room_number);
+        });
+    }
+    
+    return floors;
+}
+
+// عرض الغرف حسب الطوابق
+function displayRoomsByFloor() {
+    const roomsContainer = document.getElementById('rooms-container');
+    roomsContainer.innerHTML = '';
+    
+    const floors = organizeRoomsByFloor(roomsData);
+    
+    // ترتيب الطوابق تصاعدياً
+    const sortedFloors = Object.keys(floors).sort();
+    
+    sortedFloors.forEach(floor => {
+        const floorContainer = document.createElement('div');
+        floorContainer.className = 'mb-4';
+        
+        const floorTitle = document.createElement('div');
+        floorTitle.className = 'floor-title';
+        floorTitle.innerHTML = `<i class="fas fa-building me-2"></i> الطابق ${floor}`;
+        
+        const floorRooms = document.createElement('div');
+        floorRooms.className = 'floor-rooms';
+        
+        floors[floor].forEach(room => {
+            const roomButton = document.createElement('button');
+            roomButton.className = `room-btn ${room.status === 'شاغرة' ? 'available-btn' : 'occupied-btn'}`;
+            roomButton.setAttribute('data-status', room.status);
+            roomButton.setAttribute('data-room-number', room.room_number);
+            roomButton.onclick = function() {
+                handleRoomClick(room.room_number, room.status);
+            };
+            roomButton.textContent = room.room_number;
+            
+            floorRooms.appendChild(roomButton);
         });
         
+        floorContainer.appendChild(floorTitle);
+        floorContainer.appendChild(floorRooms);
+        roomsContainer.appendChild(floorContainer);
+    });
+}
 
-    </script>
-</body>
-</html>
+// معالجة النقر على الغرفة
+function handleRoomClick(roomNumber, status) {
+    if (status === 'شاغرة') {
+        // توجيه المستخدم إلى صفحة تسجيل الحجز
+        window.location.href = `bookings/add2.php?room_number=${roomNumber}`;
+    } else {
+        Swal.fire({
+            icon: 'info',
+            title: 'غرفة محجوزة',
+            text: 'هذه الغرفة محجوزة حالياً. هل تريد عرض تفاصيل الحجز؟',
+            showCancelButton: true,
+            confirmButtonText: 'عرض التفاصيل',
+            cancelButtonText: 'إلغاء'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // البحث عن الحجز وتوجيه المستخدم لصفحة التفاصيل
+                window.location.href = `bookings/list.php?search=${roomNumber}`;
+            }
+        });
+    }
+}
+
+// تهيئة العرض الأولي
+document.addEventListener('DOMContentLoaded', () => {
+    displayRoomsByFloor();
+    
+    // تحديث البيانات كل 5 دقائق
+    setInterval(() => {
+        location.reload();
+    }, 300000);
+});
+</script>
+
+<?php include '../includes/footer.php'; ?>

@@ -1,13 +1,15 @@
 <?php
 ob_start();
+session_start();
 include '../../includes/db.php';
-
 require_once '../../includes/functions.php';
 
 // التحقق من معرف الحجز
 $booking_id = intval($_GET['id'] ?? 0);
 if ($booking_id <= 0) {
-    die("رقم الحجز غير صالح");
+    $_SESSION['error'] = "رقم الحجز غير صالح";
+    header("Location: list.php");
+    exit();
 }
 
 $booking_query = "
@@ -22,13 +24,17 @@ $booking_query = "
 
 $stmt = $conn->prepare($booking_query);
 if (!$stmt) {
-    die("خطأ في الاستعلام: " . $conn->error);
+    $_SESSION['error'] = "خطأ في الاستعلام: " . $conn->error;
+    header("Location: list.php");
+    exit();
 }
 $stmt->bind_param("i", $booking_id);
 $stmt->execute();
 $booking_result = $stmt->get_result();
 if ($booking_result->num_rows === 0) {
-    die("الحجز غير موجود");
+    $_SESSION['error'] = "الحجز غير موجود";
+    header("Location: list.php");
+    exit();
 }
 $booking = $booking_result->fetch_assoc();
 
@@ -76,27 +82,15 @@ if (isset($_POST['checkout'])) {
             );
 
             $conn->commit();
-            echo '<script>
-                document.addEventListener("DOMContentLoaded", function() {
-                    Swal.fire({
-                        icon: "success",
-                        title: "نجاح",
-                        text: "تم تسجيل خروج النزيل بنجاح وتم تحرير الغرفة.",
-                        confirmButtonText: "موافق"
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = "payment.php?id=' . $booking_id . '";
-                        }
-                    });
-                });
-            </script>';
+            $_SESSION['success'] = "تم تسجيل خروج النزيل بنجاح وتم تحرير الغرفة.";
+            header("Location: payment.php?id=$booking_id");
             exit();
         } catch (Exception $e) {
             $conn->rollback();
-            $error = $e->getMessage();
+            $_SESSION['error'] = $e->getMessage();
         }
     } else {
-        $error = "لا يمكن تسجيل المغادرة قبل تسديد كافة المستحقات.";
+        $_SESSION['error'] = "لا يمكن تسجيل المغادرة قبل تسديد كافة المستحقات.";
     }
 }
 
@@ -115,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_payment'])) {
     $notes = $conn->real_escape_string($_POST['notes'] ?? '');
 
     if ($amount <= 0 || $amount > $remaining) {
-        $error = "المبلغ يجب أن يكون بين 1 و " . number_format($remaining, 0) . " ريال";
+        $_SESSION['error'] = "المبلغ يجب أن يكون بين 1 و " . number_format($remaining, 0) . " ريال";
     } else {
         $insert_sql = "INSERT INTO payment (booking_id, amount, payment_date, payment_method, notes)
                        VALUES (?, ?, ?, ?, ?)";
@@ -162,194 +156,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_payment'])) {
             if (is_array($wa_result)) {
                 switch ($wa_result['status']) {
                     case 'sent':
-                        $wa_status = "وتم إرسال الإشعار للعميل عبر واتساب بنجاح.";
+                        $wa_status = " وتم إرسال الإشعار للعميل عبر واتساب بنجاح.";
                         break;
                     case 'saved':
-                        $wa_status = "وتم حفظ الإشعار للإرسال عند توفر الإنترنت.";
+                        $wa_status = " وتم حفظ الإشعار للإرسال عند توفر الإنترنت.";
                         break;
                     default:
-                        $wa_status = "ولكن لم يتم إرسال الإشعار للعميل.";
+                        $wa_status = " ولكن لم يتم إرسال الإشعار للعميل.";
                 }
             } else {
-                $wa_status = "ولكن لم يتم إرسال الإشعار للعميل.";
+                $wa_status = " ولكن لم يتم إرسال الإشعار للعميل.";
             }
 
-            $success_msg = "تم تسجيل الدفعة بنجاح " . $wa_status;
-            
-            echo '<script>
-                document.addEventListener("DOMContentLoaded", function() {
-                    Swal.fire({
-                        icon: "success",
-                        title: "نجاح العملية",
-                        text: ' . json_encode($success_msg) . ',
-                        confirmButtonText: "موافق"
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = "payment.php?id=' . $booking_id . '";
-                        }
-                    });
-                });
-            </script>';
+            $_SESSION['success'] = "تم تسجيل الدفعة بنجاح" . $wa_status;
+            header("Location: payment.php?id=$booking_id");
             exit();
         } else {
-            $error = "خطأ في إضافة الدفعة: " . $conn->error;
+            $_SESSION['error'] = "خطأ في إضافة الدفعة: " . $conn->error;
         }
     }
 }
+
+// إعادة جلب البيانات بعد أي تحديث
+$stmt = $conn->prepare($booking_query);
+$stmt->bind_param("i", $booking_id);
+$stmt->execute();
+$booking_result = $stmt->get_result();
+$booking = $booking_result->fetch_assoc();
+$paid_amount = $booking['paid_amount'];
+$remaining = max(0, $total_price - $paid_amount);
+
+// إعادة جلب الدفعات
+$stmt_payments = $conn->prepare($payments_query);
+$stmt_payments->bind_param("i", $booking_id);
+$stmt_payments->execute();
+$payments_res = $stmt_payments->get_result();
 ?>
 
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة الدفعات - حجز #<?= htmlspecialchars($booking_id) ?></title>
-    
-    <!-- CSS محلي -->
-    <link href="../../assets/css/bootstrap-complete.css" rel="stylesheet">
-    <link href="../../assets/css/fontawesome.min.css" rel="stylesheet">
-    <link href="../../assets/fonts/fonts.css" rel="stylesheet">
-    
-    <style>
-        body {
-            font-family: 'Tajawal', sans-serif;
-            font-weight: 500;
-            direction: rtl;
-            text-align: right;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-        }
-        
-        .checkout-btn {position: fixed; bottom: 20px; left: 20px; z-index: 1000;}
-        .back-btn {position: fixed; bottom: 20px; right: 20px; z-index: 1000;}
-        .highlight-row {background-color: #fff3cd;}
-        .total-row {font-weight: bold; background-color: #f8f9fa;}
-        .badge {padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;}
-        
-        .payment-header {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 25px 15px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        .payment-header h1 {
-            margin: 0;
-            font-size: 1.8rem;
-            font-weight: 700;
-        }
-        .booking-id {
-            font-size: 1.1rem;
-            margin-top: 10px;
-            opacity: 0.9;
-        }
-        
-        .form-control, .form-select {
-            font-weight: 500;
-            text-align: right;
-            border-radius: 8px;
-            border: 1px solid #ced4da;
-            transition: all 0.3s ease;
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
-        }
-        
-        input[type="number"] {
-            font-family: Arial, sans-serif;
-            direction: ltr;
-            text-align: left;
-        }
-        
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
-        
-        .card-header {
-            border-radius: 15px 15px 0 0 !important;
-            border: none;
-            font-weight: 600;
-        }
-        
-        .btn {
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border: none;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        
-        .table {
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .table th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-weight: 600;
-            border: none;
-        }
-        
-        .alert {
-            border-radius: 10px;
-            border: none;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        /* تحسين الإشعارات */
-        .notification-badge {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: #dc3545;
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-    </style>
-</head>
-<body>
+<?php include '../../includes/header.php'; ?>
+
 <div class="container py-4">
     <div class="payment-header">
         <h1><i class="fas fa-credit-card"></i> إدارة المدفوعات</h1>
         <div class="booking-id">حجز رقم <?= htmlspecialchars($booking_id) ?> - <?= htmlspecialchars($booking['guest_name']) ?></div>
     </div>
-
-    <?php if (isset($error)): ?>
-        <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            Swal.fire({
-                icon: 'error',
-                title: 'خطأ',
-                text: <?= json_encode($error) ?>,
-                confirmButtonText: 'موافق'
-            });
-        });
-        </script>
-    <?php endif; ?>
 
     <div class="row">
         <div class="col-md-6">
@@ -391,7 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_payment'])) {
                 </div>
                 <div class="card-body">
                     <?php if ($remaining > 0): ?>
-                    <form method="post" novalidate>
+                    <form method="post" novalidate id="paymentForm">
                         <div class="mb-3">
                             <label for="amount" class="form-label">المبلغ (ريال)</label>
                             <input type="number" name="amount" id="amount" class="form-control"
@@ -415,7 +265,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_payment'])) {
                             <label for="notes" class="form-label">ملاحظات</label>
                             <textarea name="notes" id="notes" class="form-control" rows="2" placeholder="أضف أي ملاحظات إضافية..."></textarea>
                         </div>
-                        <button type="submit" name="submit_payment" class="btn btn-success w-100">
+                        <button type="submit" name="submit_payment" class="btn btn-success w-100" id="submitPaymentBtn">
                             <i class="fas fa-check-circle"></i> تسجيل الدفعة وإرسال إشعار واتساب
                         </button>
                     </form>
@@ -480,8 +330,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_payment'])) {
 
     <!-- زر تسجيل المغادرة -->
     <?php if ($remaining == 0 && $booking['status'] == 'محجوزة'): ?>
-        <form method="post" class="checkout-btn" onsubmit="return confirm('هل أنت متأكد من تسجيل مغادرة النزيل؟');">
-            <button type="submit" name="checkout" class="btn btn-danger btn-lg shadow">
+        <form method="post" class="checkout-btn" id="checkoutForm">
+            <button type="submit" name="checkout" class="btn btn-danger btn-lg shadow" onclick="return confirmCheckout()">
                 <i class="fas fa-sign-out-alt"></i> تسجيل مغادرة النزيل وتحرير الغرفة
             </button>
         </form>
@@ -492,48 +342,160 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_payment'])) {
     <?php endif; ?>
 </div>
 
+<style>
+    .payment-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 25px 15px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .payment-header h1 {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+    .booking-id {
+        font-size: 1.1rem;
+        margin-top: 10px;
+        opacity: 0.9;
+    }
+    
+    .checkout-btn {position: fixed; bottom: 20px; left: 20px; z-index: 1000;}
+    .back-btn {position: fixed; bottom: 20px; right: 20px; z-index: 1000;}
+    .highlight-row {background-color: #fff3cd;}
+    .total-row {font-weight: bold; background-color: #f8f9fa;}
+    .badge {padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;}
+    
+    input[type="number"] {
+        font-family: Arial, sans-serif;
+        direction: ltr;
+        text-align: left;
+    }
+    
+    /* تحسين زر الإرسال */
+    #submitPaymentBtn:disabled {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        opacity: 0.65;
+    }
+    
+    .btn-loading {
+        position: relative;
+    }
+    
+    .btn-loading:after {
+        content: "";
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        top: 50%;
+        left: 50%;
+        margin-left: -8px;
+        margin-top: -8px;
+        border-radius: 50%;
+        border: 2px solid #ffffff;
+        border-color: #ffffff transparent #ffffff transparent;
+        animation: btn-loading-spinner 1.2s linear infinite;
+    }
+    
+    @keyframes btn-loading-spinner {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
 <!-- JavaScript محلي -->
 <script src="../../assets/js/jquery.min.js"></script>
 <script src="../../assets/js/bootstrap-full.js"></script>
 <script src="../../assets/js/sweetalert2.min.js"></script>
 
 <script>
-// التحقق من صحة النموذج
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form[method="post"]');
-    if (form) {
-        form.addEventListener('submit', function(e) {
+    // إضافة معالج للنموذج
+    const paymentForm = document.getElementById('paymentForm');
+    const submitBtn = document.getElementById('submitPaymentBtn');
+    
+    if (paymentForm && submitBtn) {
+        paymentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // التحقق من صحة البيانات
             const amount = parseFloat(document.getElementById('amount').value);
-            const maxAmount = parseFloat(document.getElementById('amount').getAttribute('max'));
+            const maxAmount = <?= $remaining ?>;
             
             if (amount <= 0 || amount > maxAmount) {
-                e.preventDefault();
                 Swal.fire({
                     icon: 'error',
                     title: 'خطأ في المبلغ',
-                    text: 'يرجى إدخال مبلغ صحيح',
+                    text: `المبلغ يجب أن يكون بين 1 و ${maxAmount.toLocaleString()} ريال`,
                     confirmButtonText: 'موافق'
                 });
-                return false;
+                return;
             }
-        });
-    }
-    
-    // تحسين تجربة المستخدم
-    const amountInput = document.getElementById('amount');
-    if (amountInput) {
-        amountInput.addEventListener('input', function() {
-            const value = parseFloat(this.value);
-            const max = parseFloat(this.getAttribute('max'));
             
-            if (value > max) {
-                this.value = max;
-            }
+            // تأكيد العملية
+            Swal.fire({
+                title: 'تأكيد الدفعة',
+                text: `هل أنت متأكد من تسجيل دفعة قدرها ${amount.toLocaleString()} ريال؟`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#dc3545',
+                confirmButtonText: 'نعم، تسجيل الدفعة',
+                cancelButtonText: 'إلغاء'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // تعطيل الزر وإظهار التحميل
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('btn-loading');
+                    submitBtn.innerHTML = '<span style="opacity: 0;">تجاري التسجيل...</span>';
+                    
+                    // إرسال النموذج
+                    paymentForm.submit();
+                }
+            });
         });
     }
 });
+
+function confirmCheckout() {
+    return confirm('هل أنت متأكد من تسجيل مغادرة النزيل وتحرير الغرفة؟\nهذا الإجراء لا يمكن التراجع عنه.');
+}
+
+// تحسين تجربة المستخدم
+$(document).ready(function() {
+    // تنسيق المبلغ أثناء الكتابة
+    $('#amount').on('input', function() {
+        const value = parseFloat(this.value);
+        const max = <?= $remaining ?>;
+        
+        if (value > max) {
+            $(this).addClass('is-invalid');
+            $(this).siblings('.form-text').addClass('text-danger').text(`المبلغ يتجاوز الحد الأقصى: ${max.toLocaleString()} ريال`);
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).siblings('.form-text').removeClass('text-danger').text(`الحد الأقصى: ${max.toLocaleString()} ريال`);
+        }
+    });
+    
+    // تحديث الوقت تلقائياً
+    setInterval(function() {
+        const now = new Date();
+        const isoString = now.getFullYear() + '-' + 
+                          String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                          String(now.getDate()).padStart(2, '0') + 'T' + 
+                          String(now.getHours()).padStart(2, '0') + ':' + 
+                          String(now.getMinutes()).padStart(2, '0');
+        $('#payment_date').val(isoString);
+    }, 60000); // كل دقيقة
+});
 </script>
 
-</body>
-</html>
-<?php ob_end_flush(); ?>
+<?php include '../../includes/footer.php'; ?>

@@ -4,10 +4,25 @@ require_once __DIR__ . '/config.php';
 // تحديد المنطقة الزمنية لعدن (اليمن)
 date_default_timezone_set('Asia/Aden');
 
-// تحديد المسار النسبي للأصول حسب موقع الملف
-$current_dir = dirname($_SERVER['SCRIPT_NAME']);
-$depth = substr_count($current_dir, '/') - 1; // عدد المستويات من الجذر
-$assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
+// تحديد المسار النسبي للأصول حسب موقع الملف بدقة
+$current_script = $_SERVER['SCRIPT_NAME'];
+$base_admin_path = '/marinahotel/admin/';
+
+// حساب العمق من مجلد admin
+if (strpos($current_script, $base_admin_path) !== false) {
+    $path_after_admin = substr($current_script, strpos($current_script, $base_admin_path) + strlen($base_admin_path));
+    $depth = substr_count($path_after_admin, '/');
+} else {
+    $depth = 0;
+}
+
+// تحديد المسار الصحيح للأصول
+$assets_path = str_repeat('../', $depth);
+if ($depth === 0) {
+    $base_path = '';
+} else {
+    $base_path = str_repeat('../', $depth);
+}
 ?>
 
 <!DOCTYPE html>
@@ -15,7 +30,7 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>نظام إدارة الفندق</title>
+    <title>نظام إدارة فندق مارينا</title>
 
     <!-- Bootstrap CSS (Local) -->
     <link href="<?= BASE_URL ?>assets/css/bootstrap-complete.css" rel="stylesheet">
@@ -49,6 +64,7 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             padding: 1rem 0;
+            z-index: 1050;
         }
 
         .navbar-brand {
@@ -86,6 +102,110 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
 
         .navbar-toggler:focus {
             box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
+        }
+
+        /* إصلاح القوائم المنسدلة */
+        .dropdown-menu {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            padding: 10px 0;
+            margin-top: 8px;
+            min-width: 300px;
+            background: white;
+            direction: rtl;
+            text-align: right;
+            position: absolute;
+            z-index: 1000;
+            display: none;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-header {
+            color: #667eea !important;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 8px 20px 5px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .dropdown-item {
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            color: #495057;
+            transition: all 0.3s ease;
+            border-radius: 0;
+            text-align: right;
+            direction: rtl;
+            display: block;
+            width: 100%;
+            clear: both;
+            font-weight: 400;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .dropdown-item:hover,
+        .dropdown-item:focus {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        .dropdown-item i {
+            width: 20px;
+            text-align: center;
+            opacity: 0.7;
+            margin-left: 8px;
+        }
+
+        .dropdown-item:hover i,
+        .dropdown-item:focus i {
+            opacity: 1;
+        }
+
+        .dropdown-divider {
+            margin: 8px 0;
+            border-color: #e9ecef;
+        }
+
+        .dropdown-toggle::after {
+            margin-left: 5px;
+        }
+
+        /* تحسين responsive */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 70px;
+            }
+
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+
+            .navbar-nav .nav-link {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .dropdown-menu {
+                position: static !important;
+                transform: none !important;
+                box-shadow: none;
+                border: 1px solid #dee2e6;
+                margin-top: 5px;
+                width: 100%;
+                min-width: auto;
+            }
         }
 
         /* تنسيق الجداول */
@@ -190,124 +310,6 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
             font-weight: 600;
         }
 
-        /* تنسيق القوائم المنسدلة */
-        .dropdown-menu {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            padding: 10px 0;
-            margin-top: 8px;
-            min-width: 280px;
-            background: white;
-            direction: rtl;
-            text-align: right;
-        }
-
-        .dropdown-header {
-            color: #667eea !important;
-            font-weight: 700;
-            font-size: 0.85rem;
-            padding: 8px 20px 5px;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .dropdown-item {
-            padding: 10px 20px;
-            font-size: 0.95rem;
-            color: #495057;
-            transition: all 0.3s ease;
-            border-radius: 0;
-            text-align: right;
-            direction: rtl;
-        }
-
-        .dropdown-item:hover,
-        .dropdown-item:focus {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            transform: translateX(-5px);
-        }
-
-        .dropdown-item i {
-            width: 20px;
-            text-align: center;
-            opacity: 0.7;
-            margin-left: 8px;
-        }
-
-        .dropdown-item:hover i,
-        .dropdown-item:focus i {
-            opacity: 1;
-        }
-
-        .dropdown-divider {
-            margin: 8px 0;
-            border-color: #e9ecef;
-        }
-
-        /* تحسين عرض القائمة المنسدلة */
-        .dropdown:hover .dropdown-menu {
-            display: block;
-            margin-top: 0;
-        }
-
-        .dropdown-toggle::after {
-            margin-left: 5px;
-        }
-
-        /* إصلاحات إضافية للقوائم المنسدلة */
-        .dropdown-menu {
-            right: 0 !important;
-            left: auto !important;
-            transform-origin: top right;
-        }
-
-        .dropdown-menu.show {
-            display: block;
-        }
-
-        /* إصلاح للأجهزة المحمولة */
-        @media (max-width: 768px) {
-            body {
-                padding-top: 70px;
-            }
-
-            .navbar-brand {
-                font-size: 1.2rem;
-            }
-
-            .navbar-nav .nav-link {
-                padding: 0.5rem 1rem;
-                font-size: 0.9rem;
-            }
-
-            .table {
-                font-size: 0.9rem;
-            }
-
-            .btn {
-                font-size: 0.9rem;
-                padding: 0.5rem 1rem;
-            }
-
-            .dropdown-menu {
-                position: static !important;
-                transform: none !important;
-                box-shadow: none;
-                border: 1px solid #dee2e6;
-                margin-top: 5px;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .table th, .table td {
-                padding: 8px 10px;
-                font-size: 0.8rem;
-            }
-        }
-
         /* إشعارات النظام */
         .notifications-container {
             position: fixed;
@@ -349,14 +351,31 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
                 opacity: 1;
             }
         }
+
+        /* إصلاح notification badge */
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <!-- شريط التنقل -->
     <nav class="navbar navbar-expand-lg fixed-top" aria-label="Main navigation">
         <div class="container">
-            <a class="navbar-brand" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/dash.php" title="الصفحة الرئيسية">
-                <i class="fas fa-hotel me-2"></i>نظام إدارة الفندق
+            <a class="navbar-brand" href="<?= $base_path ?>dash.php" title="الصفحة الرئيسية">
+                <i class="fas fa-hotel me-2"></i>فندق مارينا
             </a>
             <button
                 class="navbar-toggler"
@@ -373,17 +392,17 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/dash.php">
+                        <a class="nav-link" href="<?= $base_path ?>dash.php">
                             <i class="fas fa-tachometer-alt me-1"></i>لوحة التحكم
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/bookings/list.php">
+                        <a class="nav-link" href="<?= $base_path ?>bookings/list.php">
                             <i class="fas fa-calendar-alt me-1"></i>الحجوزات
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/bookings/add2.php">
+                        <a class="nav-link" href="<?= $base_path ?>bookings/add2.php">
                             <i class="fas fa-plus-circle me-1"></i>حجز جديد
                         </a>
                     </li>
@@ -393,32 +412,24 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
                         </a>
                         <ul class="dropdown-menu">
                             <li><h6 class="dropdown-header"><i class="fas fa-money-bill-wave me-1"></i>التقارير المالية</h6></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/reports/revenue.php">
+                            <li><a class="dropdown-item" href="<?= $base_path ?>reports/revenue.php">
                                 <i class="fas fa-chart-line me-2"></i>تقارير الإيرادات
                             </a></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/reports/report.php">
+                            <li><a class="dropdown-item" href="<?= $base_path ?>reports/report.php">
                                 <i class="fas fa-chart-pie me-2"></i>التقارير الشاملة
                             </a></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/reports/comprehensive_reports.php">
-                                <i class="fas fa-file-alt me-2"></i>التقارير التفصيلية
+                            <li><a class="dropdown-item" href="<?= $base_path ?>reports.php">
+                                <i class="fas fa-file-alt me-2"></i>نظام التقارير الجديد
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header"><i class="fas fa-users me-1"></i>تقارير الموظفين</h6></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/reports/employee_withdrawals_report.php">
+                            <li><a class="dropdown-item" href="<?= $base_path ?>reports/employee_withdrawals_report.php">
                                 <i class="fas fa-hand-holding-usd me-2"></i>سحوبات الموظفين
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header"><i class="fas fa-bed me-1"></i>تقارير الإشغال</h6></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/reports/occupancy.php">
+                            <li><a class="dropdown-item" href="<?= $base_path ?>reports/occupancy.php">
                                 <i class="fas fa-chart-area me-2"></i>تقرير الإشغال
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header"><i class="fas fa-print me-1"></i>التصدير</h6></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/reports/export_excel.php">
-                                <i class="fas fa-file-excel me-2"></i>تصدير Excel
-                            </a></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/reports/export_pdf.php">
-                                <i class="fas fa-file-pdf me-2"></i>تصدير PDF
                             </a></li>
                         </ul>
                     </li>
@@ -428,32 +439,43 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
                         </a>
                         <ul class="dropdown-menu">
                             <li><h6 class="dropdown-header"><i class="fas fa-plus me-1"></i>إضافة مصروفات</h6></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/expenses/expenses.php">
+                            <li><a class="dropdown-item" href="<?= $base_path ?>expenses/expenses.php">
                                 <i class="fas fa-plus-circle me-2"></i>إضافة مصروف جديد
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header"><i class="fas fa-list me-1"></i>إدارة المصروفات</h6></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/expenses/list.php">
+                            <li><a class="dropdown-item" href="<?= $base_path ?>expenses/list.php">
                                 <i class="fas fa-list-ul me-2"></i>قائمة المصروفات
                             </a></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/expenses/categories.php">
+                            <li><a class="dropdown-item" href="<?= $base_path ?>expenses/categories.php">
                                 <i class="fas fa-tags me-2"></i>فئات المصروفات
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header"><i class="fas fa-users-cog me-1"></i>مصروفات الموظفين</h6></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/expenses/employee_expenses.php">
+                            <li><a class="dropdown-item" href="<?= $base_path ?>expenses/employee_expenses.php">
                                 <i class="fas fa-user-tie me-2"></i>مصروفات الرواتب
                             </a></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/expenses/salary_withdrawals.php">
+                            <li><a class="dropdown-item" href="<?= $base_path ?>expenses/salary_withdrawals.php">
                                 <i class="fas fa-hand-holding-usd me-2"></i>سحوبات الرواتب
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header"><i class="fas fa-chart-bar me-1"></i>تقارير المصروفات</h6></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/expenses/monthly_report.php">
+                            <li><a class="dropdown-item" href="<?= $base_path ?>expenses/monthly_report.php">
                                 <i class="fas fa-calendar-alt me-2"></i>التقرير الشهري
                             </a></li>
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>admin/expenses/yearly_report.php">
+                            <li><a class="dropdown-item" href="<?= $base_path ?>expenses/yearly_report.php">
                                 <i class="fas fa-calendar me-2"></i>التقرير السنوي
+                            </a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-cogs me-1"></i>الإدارة
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><h6 class="dropdown-header"><i class="fas fa-comments me-1"></i>واتساب</h6></li>
+                            <li><a class="dropdown-item" href="<?= $base_path ?>whatsapp_manager.php">
+                                <i class="fab fa-whatsapp me-2"></i>إدارة الواتساب
                             </a></li>
                         </ul>
                     </li>
@@ -477,7 +499,7 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
                             <i class="fas fa-user me-1"></i>المستخدم
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="<?php echo str_repeat('../', max(0, $depth)); ?>logout.php">
+                            <li><a class="dropdown-item" href="<?= $base_path ?>../logout.php">
                                 <i class="fas fa-sign-out-alt me-1"></i>تسجيل الخروج
                             </a></li>
                         </ul>
@@ -506,111 +528,44 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
             </div>
             <?php unset($_SESSION['error']); ?>
         <?php endif; ?>
-
-        <!-- باقي محتوى الصفحة -->
     </div>
 
-    <!-- jQuery Local -->
+    <!-- JavaScript للإشعارات -->
     <script src="<?= BASE_URL ?>assets/js/jquery.min.js"></script>
-    <!-- Bootstrap JS Local -->
     <script src="<?= BASE_URL ?>assets/js/bootstrap-full.js"></script>
-    <!-- SweetAlert2 Local -->
-    <script src="<?= BASE_URL ?>assets/js/sweetalert2.min.js"></script>
-
     <script>
-        // تحسين تجربة المستخدم
-        document.addEventListener('DOMContentLoaded', function() {
-            // إصلاح القوائم المنسدلة
-            initDropdownFixes();
-            
-            // تحميل الإشعارات
-            loadNotifications();
-            
-            // تحديث الإشعارات كل دقيقة
-            setInterval(loadNotifications, 60000);
-            
-            // إضافة تأثيرات للأزرار
-            const buttons = document.querySelectorAll('.btn');
-            buttons.forEach(button => {
-                button.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-2px)';
-                });
-                button.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0)';
-                });
-            });
-        });
-
-        function initDropdownFixes() {
-            const dropdowns = document.querySelectorAll('.dropdown-toggle');
-            dropdowns.forEach(dropdown => {
-                dropdown.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const menu = this.nextElementSibling;
-                    if (menu && menu.classList.contains('dropdown-menu')) {
-                        menu.classList.toggle('show');
-                    }
-                });
-            });
-
-            // إغلاق القوائم عند النقر خارجها
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.dropdown')) {
-                    document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-                        menu.classList.remove('show');
-                    });
-                }
-            });
-        }
-
-        // دالة لتحميل الإشعارات
+        // إشعارات النظام
         function loadNotifications() {
             fetch('<?= BASE_URL ?>api/get_notifications.php')
                 .then(response => response.json())
                 .then(data => {
-                    updateNotificationsBadge(data.count);
-                    updateNotificationsMenu(data.notifications);
+                    if (data.success && data.notifications.length > 0) {
+                        updateNotificationUI(data.notifications);
+                    }
                 })
-                .catch(error => {
-                    console.log('لا يمكن تحميل الإشعارات:', error);
-                });
+                .catch(error => console.log('Error loading notifications:', error));
         }
 
-        function updateNotificationsBadge(count) {
+        function updateNotificationUI(notifications) {
             const badge = document.getElementById('notificationCount');
-            if (count > 0) {
-                badge.textContent = count;
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-
-        function updateNotificationsMenu(notifications) {
             const menu = document.getElementById('notificationsMenu');
             const noNotifications = document.getElementById('noNotifications');
             
-            // إزالة الإشعارات القديمة
-            menu.querySelectorAll('.notification-item-menu').forEach(item => {
-                item.remove();
-            });
-            
             if (notifications.length > 0) {
+                badge.textContent = notifications.length;
+                badge.style.display = 'flex';
                 noNotifications.style.display = 'none';
+                
+                let notificationsHTML = '<li><h6 class="dropdown-header">الإشعارات الحديثة</h6></li>';
                 notifications.forEach(notification => {
-                    const item = document.createElement('li');
-                    item.className = 'notification-item-menu';
-                    item.innerHTML = `
-                        <a class="dropdown-item" href="#" onclick="markAsRead(${notification.id})">
-                            <small class="text-muted">${notification.created_at}</small><br>
-                            <strong>${notification.title}</strong><br>
-                            <span class="text-muted">${notification.message}</span>
-                        </a>
+                    notificationsHTML += `
+                        <li><a class="dropdown-item" href="#" onclick="markAsRead(${notification.id})">
+                            <div><strong>${notification.title}</strong></div>
+                            <small>${notification.message}</small>
+                        </a></li>
                     `;
-                    menu.appendChild(item);
                 });
-            } else {
-                noNotifications.style.display = 'block';
+                menu.innerHTML = notificationsHTML;
             }
         }
 
@@ -620,32 +575,53 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id: notificationId })
+                body: JSON.stringify({id: notificationId})
             })
-            .then(() => {
-                loadNotifications();
-            });
+            .then(() => loadNotifications())
+            .catch(error => console.log('Error marking notification as read:', error));
         }
 
-        function showSystemNotification(title, message, type = 'info') {
-            const container = document.getElementById('notificationsContainer');
-            const notification = document.createElement('div');
-            notification.className = `notification-item ${type}`;
-            notification.innerHTML = `
-                <strong>${title}</strong><br>
-                <span>${message}</span>
-                <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
-            `;
+        // تحميل الإشعارات عند بدء الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNotifications();
+            // تحديث كل 30 ثانية
+            setInterval(loadNotifications, 30000);
+        });
+
+        // إصلاح القوائم المنسدلة للأجهزة المحمولة
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdowns = document.querySelectorAll('.dropdown');
             
-            container.appendChild(notification);
-            
-            // إزالة الإشعار تلقائياً بعد 5 ثواني
-            setTimeout(() => {
-                if (notification.parentElement) {
-                    notification.remove();
+            dropdowns.forEach(dropdown => {
+                const toggle = dropdown.querySelector('.dropdown-toggle');
+                const menu = dropdown.querySelector('.dropdown-menu');
+                
+                if (toggle && menu) {
+                    toggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        
+                        // إغلاق جميع القوائم الأخرى
+                        dropdowns.forEach(otherDropdown => {
+                            if (otherDropdown !== dropdown) {
+                                otherDropdown.querySelector('.dropdown-menu')?.classList.remove('show');
+                            }
+                        });
+                        
+                        // تبديل حالة القائمة الحالية
+                        menu.classList.toggle('show');
+                    });
                 }
-            }, 5000);
-        }
+            });
+            
+            // إغلاق القوائم عند النقر خارجها
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    dropdowns.forEach(dropdown => {
+                        dropdown.querySelector('.dropdown-menu')?.classList.remove('show');
+                    });
+                }
+            });
+        });
     </script>
 </body>
 </html>
