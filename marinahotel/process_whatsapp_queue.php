@@ -13,18 +13,33 @@ try {
     
     echo "تم معالجة: {$result['processed']} رسالة\n";
     echo "تم إرسال: {$result['sent']} رسالة\n";
+    echo "رسائل غير صالحة: {$result['invalid']} رسالة\n";
+    echo "رسائل معلقة: {$result['pending']} رسالة\n";
     
-    // إنشاء إشعار نظام إذا تم إرسال رسائل
+    // إنشاء إشعار نظام بناءً على النتائج
     if ($result['sent'] > 0) {
+        $notification_msg = "تم إرسال {$result['sent']} رسالة واتساب بنجاح";
+        if ($result['invalid'] > 0) {
+            $notification_msg .= " و{$result['invalid']} رسائل غير صالحة";
+        }
         create_system_notification(
             "إرسال رسائل واتساب",
-            "تم إرسال {$result['sent']} رسالة واتساب بنجاح",
+            $notification_msg,
             "success"
         );
     }
     
-    // إنشاء ملف log
-    $log_entry = date('Y-m-d H:i:s') . " - معالج: {$result['processed']}, مرسل: {$result['sent']}\n";
+    // إنشاء إشعار للرسائل غير الصالحة
+    if ($result['invalid'] > 0 && $result['sent'] == 0) {
+        create_system_notification(
+            "رسائل واتساب غير صالحة",
+            "تم اكتشاف {$result['invalid']} رسالة غير صالحة (أرقام غير مطابقة للنزلاء)",
+            "warning"
+        );
+    }
+    
+    // إنشاء ملف log مفصل
+    $log_entry = date('Y-m-d H:i:s') . " - معالج: {$result['processed']}, مرسل: {$result['sent']}, غير صالح: {$result['invalid']}, معلق: {$result['pending']}\n";
     file_put_contents('logs/whatsapp_queue.log', $log_entry, FILE_APPEND | LOCK_EX);
     
     echo "تمت المعالجة بنجاح\n";

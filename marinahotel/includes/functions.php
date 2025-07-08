@@ -19,6 +19,64 @@ function format_yemeni_phone($phone) {
     return false; // رقم غير صالح
 }
 
+// دالة للتحقق من صحة بيانات النزيل المسجل
+function validate_guest_phone($phone, $booking_id = null) {
+    global $conn;
+    
+    // إذا لم يتم تمرير booking_id، فلا يمكن التحقق
+    if ($booking_id === null) {
+        return false;
+    }
+    
+    // تنسيق رقم الهاتف للمقارنة
+    $formatted_phone = format_yemeni_phone($phone);
+    if (!$formatted_phone) {
+        return false;
+    }
+    
+    try {
+        // التحقق من وجود الحجز برقم الحجز المحدد
+        $sql = "SELECT guest_phone, guest_name, status FROM bookings WHERE booking_id = ?";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            error_log("خطأ في تحضير استعلام التحقق من النزيل: " . $conn->error);
+            return false;
+        }
+        
+        $stmt->bind_param("i", $booking_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            error_log("لا يوجد حجز برقم: " . $booking_id);
+            return false;
+        }
+        
+        $booking = $result->fetch_assoc();
+        $db_phone = format_yemeni_phone($booking['guest_phone']);
+        
+        // التحقق من تطابق أرقام الهاتف
+        if ($formatted_phone !== $db_phone) {
+            error_log("رقم الهاتف غير متطابق للحجز {$booking_id}. المدخل: {$formatted_phone}، المسجل: {$db_phone}");
+            return false;
+        }
+        
+        // التحقق من أن الحجز ما زال نشطاً (ليس ملغياً أو محذوفاً)
+        if (in_array($booking['status'], ['ملغي', 'محذوف'])) {
+            error_log("الحجز {$booking_id} في حالة غير نشطة: " . $booking['status']);
+            return false;
+        }
+        
+        // تسجيل نجاح التحقق
+        error_log("تم التحقق بنجاح من النزيل {$booking['guest_name']} للحجز {$booking_id}");
+        return true;
+        
+    } catch (Exception $e) {
+        error_log("خطأ في التحقق من بيانات النزيل: " . $e->getMessage());
+        return false;
+    }
+}
+
 // دالة لحفظ رسائل الواتساب محليا وإرسالها لاحقا
 function send_yemeni_whatsapp($phone, $message, $booking_id = null) {
     global $conn;
@@ -26,6 +84,11 @@ function send_yemeni_whatsapp($phone, $message, $booking_id = null) {
     $phone = format_yemeni_phone($phone);
     if (!$phone) {
         return ['status' => 'error', 'message' => 'رقم الهاتف اليمني غير صالح'];
+    }
+
+    // التحقق من أن النزيل مسجل في قاعدة البيانات
+    if (!validate_guest_phone($phone, $booking_id)) {
+        return ['status' => 'error', 'message' => 'رقم الهاتف غير مطابق للنزيل المسجل في النظام'];
     }
 
     try {
@@ -64,6 +127,55 @@ function send_yemeni_whatsapp($phone, $message, $booking_id = null) {
         error_log("خطأ في إرسال رسالة الواتساب: " . $e->getMessage());
         return ['status' => 'error', 'message' => 'فشل في حفظ الرسالة: ' . $e->getMessage()];
     }
+}
+
+// دالة للحصول على معلومات النزيل من قاعدة البيانات
+function get_guest_info($booking_id) {
+    global $conn;
+    
+    try {
+        $sql = "SELECT booking_id, guest_name, guest_phone, guest_nationality, status, room_number 
+                FROM bookings WHERE booking_id = ?";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            return null;
+        }
+        
+        $stmt->bind_param("i", $booking_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            return $result->fetch_assoc();
+        }
+        
+        return null;
+    } catch (Exception $e) {
+        error_log("خطأ في جلب معلومات النزيل: " . $e->getMessage());
+        return null;
+    }
+}
+
+// دالة لإرسال رسالة واتساب محددة لنزيل معين
+function send_whatsapp_to_guest($booking_id, $message_template = 'default') {
+    global $conn;
+    
+    $guest = get_guest_info($booking_id);
+    if (!$guest) {
+        return ['status' => 'error', 'message' => 'لا يمكن العثور على معلومات النزيل'];
+    }
+    
+    // قوالب الرسائل المختلفة
+    $messages = [
+        'welcome' => "مرحباً بك في فندق مارينا 🏨\nعزيزي/ة {$guest['guest_name']}\nتم تأكيد حجزك في الغرفة {$guest['room_number']}\nنتمنى لك إقامة ممتعة 🌟",
+        'payment_reminder' => "تذكير بالدفع 💰\nعزيزي/ة {$guest['guest_name']}\nالغرفة: {$guest['room_number']}\nيرجى تسديد المستحقات المتبقية\nشكراً لتفهمك 🙏",
+        'checkout_reminder' => "تذكير بالمغادرة 🕐\nعزيزي/ة {$guest['guest_name']}\nالغرفة: {$guest['room_number']}\nموعد المغادرة اليوم\nشكراً لاختيارك فندقنا 🌟",
+        'default' => "فندق مارينا 🏨\nعزيزي/ة {$guest['guest_name']}\n{$guest['room_number']}\nشكراً لتعاملك معنا"
+    ];
+    
+    $message = isset($messages[$message_template]) ? $messages[$message_template] : $messages['default'];
+    
+    return send_yemeni_whatsapp($guest['guest_phone'], $message, $booking_id);
 }
 
 // دالة لإنشاء جدول رسائل الواتساب
@@ -166,9 +278,17 @@ function process_pending_whatsapp_messages() {
     $messages = get_pending_whatsapp_messages();
     $processed = 0;
     $sent = 0;
+    $invalid = 0;
     
     foreach ($messages as $message) {
         $processed++;
+        
+        // التحقق من صحة بيانات النزيل قبل المحاولة
+        if (!validate_guest_phone($message['phone'], $message['booking_id'])) {
+            update_message_status($message['id'], 'failed', 'رقم الهاتف غير مطابق للنزيل المسجل');
+            $invalid++;
+            continue;
+        }
         
         if (attempt_immediate_send($message['phone'], $message['message'])) {
             // تحديث حالة الرسالة إلى مرسلة
@@ -185,7 +305,12 @@ function process_pending_whatsapp_messages() {
         }
     }
     
-    return ['processed' => $processed, 'sent' => $sent];
+    return [
+        'processed' => $processed, 
+        'sent' => $sent, 
+        'invalid' => $invalid,
+        'pending' => $processed - $sent - $invalid
+    ];
 }
 
 // دالة لتحديث حالة الرسالة

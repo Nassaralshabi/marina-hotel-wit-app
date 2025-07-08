@@ -316,11 +316,34 @@ function processQueue() {
             fetch('../process_whatsapp_queue.php')
                 .then(response => response.text())
                 .then(data => {
+                    // استخراج النتائج من النص المعاد
+                    const lines = data.split('\n');
+                    let processed = 0, sent = 0, invalid = 0, pending = 0;
+                    
+                    lines.forEach(line => {
+                        if (line.includes('تم معالجة:')) {
+                            processed = parseInt(line.match(/\d+/)[0]);
+                        } else if (line.includes('تم إرسال:')) {
+                            sent = parseInt(line.match(/\d+/)[0]);
+                        } else if (line.includes('رسائل غير صالحة:')) {
+                            invalid = parseInt(line.match(/\d+/)[0]);
+                        } else if (line.includes('رسائل معلقة:')) {
+                            pending = parseInt(line.match(/\d+/)[0]);
+                        }
+                    });
+                    
+                    const resultText = `تمت المعالجة بنجاح:
+• تم معالجة: ${processed} رسالة
+• تم إرسال: ${sent} رسالة  
+• رسائل غير صالحة: ${invalid}
+• رسائل معلقة: ${pending}`;
+                    
                     Swal.fire({
                         icon: 'success',
                         title: 'تمت المعالجة',
-                        text: 'تم معالجة طابور الرسائل بنجاح',
-                        confirmButtonText: 'موافق'
+                        html: resultText.replace(/\n/g, '<br>'),
+                        confirmButtonText: 'موافق',
+                        width: 600
                     }).then(() => {
                         location.reload();
                     });
