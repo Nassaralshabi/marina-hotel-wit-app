@@ -18,7 +18,7 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
     <title>نظام إدارة الفندق</title>
 
     <!-- Bootstrap CSS (Local) -->
-    <link href="<?= BASE_URL ?>assets/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>assets/css/bootstrap-complete.css" rel="stylesheet">
     <!-- Local Fonts -->
     <link href="<?= BASE_URL ?>assets/fonts/fonts.css" rel="stylesheet">
     <!-- Font Awesome (Local) -->
@@ -27,12 +27,10 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
     <link href="<?= BASE_URL ?>assets/css/dashboard.css" rel="stylesheet">
     <!-- Arabic Support CSS -->
     <link href="<?= BASE_URL ?>assets/css/arabic-support.css" rel="stylesheet">
-    <!-- Google Fonts (Fallback) -->
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'"  onerror="this.media='all'">
 
     <style>
         body {
-            font-family: 'Tajawal', sans-serif;
+            font-family: 'Tajawal', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             margin: 0;
             padding-top: 80px;
@@ -43,7 +41,7 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
 
         /* تنسيق عام للعناصر */
         * {
-            font-family: 'Tajawal', sans-serif;
+            font-family: 'Tajawal', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
         /* تنسيق النافبار */
@@ -201,6 +199,8 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
             margin-top: 8px;
             min-width: 280px;
             background: white;
+            direction: rtl;
+            text-align: right;
         }
 
         .dropdown-header {
@@ -219,6 +219,8 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
             color: #495057;
             transition: all 0.3s ease;
             border-radius: 0;
+            text-align: right;
+            direction: rtl;
         }
 
         .dropdown-item:hover,
@@ -232,6 +234,7 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
             width: 20px;
             text-align: center;
             opacity: 0.7;
+            margin-left: 8px;
         }
 
         .dropdown-item:hover i,
@@ -251,7 +254,7 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
         }
 
         .dropdown-toggle::after {
-            margin-right: 5px;
+            margin-left: 5px;
         }
 
         /* إصلاحات إضافية للقوائم المنسدلة */
@@ -259,43 +262,13 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
             right: 0 !important;
             left: auto !important;
             transform-origin: top right;
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: all 0.3s ease;
-            pointer-events: none;
         }
 
         .dropdown-menu.show {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-
-        .dropdown-item {
-            text-align: right;
-            padding-right: 20px;
-            padding-left: 20px;
-        }
-
-        .dropdown-item:hover {
-            background-color: #667eea;
-            color: white;
+            display: block;
         }
 
         /* إصلاح للأجهزة المحمولة */
-        @media (max-width: 768px) {
-            .dropdown-menu {
-                position: static !important;
-                transform: none !important;
-                opacity: 1 !important;
-                pointer-events: auto !important;
-                box-shadow: none;
-                border: 1px solid #dee2e6;
-                margin-top: 5px;
-            }
-        }
-
-        /* تنسيق متجاوب */
         @media (max-width: 768px) {
             body {
                 padding-top: 70px;
@@ -318,12 +291,62 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
                 font-size: 0.9rem;
                 padding: 0.5rem 1rem;
             }
+
+            .dropdown-menu {
+                position: static !important;
+                transform: none !important;
+                box-shadow: none;
+                border: 1px solid #dee2e6;
+                margin-top: 5px;
+            }
         }
 
         @media (max-width: 576px) {
             .table th, .table td {
                 padding: 8px 10px;
                 font-size: 0.8rem;
+            }
+        }
+
+        /* إشعارات النظام */
+        .notifications-container {
+            position: fixed;
+            top: 100px;
+            left: 20px;
+            z-index: 1050;
+            max-width: 350px;
+        }
+
+        .notification-item {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification-item.success {
+            border-left-color: #28a745;
+        }
+
+        .notification-item.error {
+            border-left-color: #dc3545;
+        }
+
+        .notification-item.warning {
+            border-left-color: #ffc107;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
             }
         }
     </style>
@@ -438,6 +461,17 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
 
                 <!-- معلومات المستخدم -->
                 <ul class="navbar-nav">
+                    <!-- إشعارات النظام -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bell me-1"></i>الإشعارات
+                            <span class="notification-badge" id="notificationCount" style="display: none;"></span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" id="notificationsMenu">
+                            <li><h6 class="dropdown-header">الإشعارات الحديثة</h6></li>
+                            <li id="noNotifications"><span class="dropdown-item">لا توجد إشعارات جديدة</span></li>
+                        </ul>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-user me-1"></i>المستخدم
@@ -452,6 +486,9 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
             </div>
         </div>
     </nav>
+
+    <!-- حاوية الإشعارات -->
+    <div class="notifications-container" id="notificationsContainer"></div>
 
     <div class="container mt-4">
         <?php if (isset($_SESSION['success'])): ?>
@@ -476,19 +513,21 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
     <!-- jQuery Local -->
     <script src="<?= BASE_URL ?>assets/js/jquery.min.js"></script>
     <!-- Bootstrap JS Local -->
-    <script src="<?= BASE_URL ?>assets/js/bootstrap-local.js"></script>
-    <!-- Bootstrap JS Fallback -->
-    <script>
-        if (typeof bootstrap === 'undefined') {
-            document.write('<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"><\/script>');
-        }
-    </script>
+    <script src="<?= BASE_URL ?>assets/js/bootstrap-full.js"></script>
+    <!-- SweetAlert2 Local -->
+    <script src="<?= BASE_URL ?>assets/js/sweetalert2.min.js"></script>
 
     <script>
         // تحسين تجربة المستخدم
         document.addEventListener('DOMContentLoaded', function() {
             // إصلاح القوائم المنسدلة
             initDropdownFixes();
+            
+            // تحميل الإشعارات
+            loadNotifications();
+            
+            // تحديث الإشعارات كل دقيقة
+            setInterval(loadNotifications, 60000);
             
             // إضافة تأثيرات للأزرار
             const buttons = document.querySelectorAll('.btn');
@@ -500,153 +539,113 @@ $assets_path = str_repeat('../', max(0, $depth)) . 'assets/';
                     this.style.transform = 'translateY(0)';
                 });
             });
-
-            // تحسين عرض التنبيهات
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(alert => {
-                setTimeout(() => {
-                    if (alert.classList.contains('alert-dismissible')) {
-                        const closeBtn = alert.querySelector('.btn-close');
-                        if (closeBtn) {
-                            closeBtn.click();
-                        }
-                    }
-                }, 5000); // إخفاء التنبيه بعد 5 ثوان
-            });
         });
 
-        // إصلاح القوائم المنسدلة
         function initDropdownFixes() {
-            const dropdowns = document.querySelectorAll('.dropdown');
-            
+            const dropdowns = document.querySelectorAll('.dropdown-toggle');
             dropdowns.forEach(dropdown => {
-                const toggle = dropdown.querySelector('.dropdown-toggle');
-                const menu = dropdown.querySelector('.dropdown-menu');
-                
-                if (toggle && menu) {
-                    // إصلاح موقع القائمة للعربية
-                    menu.style.right = '0';
-                    menu.style.left = 'auto';
-                    
-                    // تحسين التفاعل بالماوس (للشاشات الكبيرة)
-                    if (window.innerWidth > 768) {
-                        dropdown.addEventListener('mouseenter', function() {
-                            menu.classList.add('show');
-                            toggle.setAttribute('aria-expanded', 'true');
-                        });
-                        
-                        dropdown.addEventListener('mouseleave', function() {
-                            menu.classList.remove('show');
-                            toggle.setAttribute('aria-expanded', 'false');
-                        });
+                dropdown.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const menu = this.nextElementSibling;
+                    if (menu && menu.classList.contains('dropdown-menu')) {
+                        menu.classList.toggle('show');
                     }
-                    
-                    // تحسين النقر
-                    toggle.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        
-                        // إغلاق القوائم الأخرى
-                        document.querySelectorAll('.dropdown-menu.show').forEach(otherMenu => {
-                            if (otherMenu !== menu) {
-                                otherMenu.classList.remove('show');
-                                const otherToggle = otherMenu.parentElement.querySelector('.dropdown-toggle');
-                                if (otherToggle) otherToggle.setAttribute('aria-expanded', 'false');
-                            }
-                        });
-                        
-                        // تبديل القائمة الحالية
-                        const isShown = menu.classList.contains('show');
-                        if (isShown) {
-                            menu.classList.remove('show');
-                            toggle.setAttribute('aria-expanded', 'false');
-                        } else {
-                            menu.classList.add('show');
-                            toggle.setAttribute('aria-expanded', 'true');
-                        }
-                    });
-                    
-                    // إضافة تأثيرات CSS للقائمة
-                    menu.style.transition = 'all 0.3s ease';
-                    menu.style.opacity = menu.classList.contains('show') ? '1' : '0';
-                    menu.style.transform = menu.classList.contains('show') ? 'translateY(0)' : 'translateY(-10px)';
-                    
-                    // مراقبة تغيير فئة show
-                    const observer = new MutationObserver(function(mutations) {
-                        mutations.forEach(function(mutation) {
-                            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                                if (menu.classList.contains('show')) {
-                                    menu.style.opacity = '1';
-                                    menu.style.transform = 'translateY(0)';
-                                } else {
-                                    menu.style.opacity = '0';
-                                    menu.style.transform = 'translateY(-10px)';
-                                }
-                            }
-                        });
-                    });
-                    observer.observe(menu, { attributes: true });
-                }
+                });
             });
-            
+
             // إغلاق القوائم عند النقر خارجها
             document.addEventListener('click', function(e) {
                 if (!e.target.closest('.dropdown')) {
                     document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
                         menu.classList.remove('show');
-                        const toggle = menu.parentElement.querySelector('.dropdown-toggle');
-                        if (toggle) toggle.setAttribute('aria-expanded', 'false');
                     });
                 }
+            });
+        }
+
+        // دالة لتحميل الإشعارات
+        function loadNotifications() {
+            fetch('<?= BASE_URL ?>api/get_notifications.php')
+                .then(response => response.json())
+                .then(data => {
+                    updateNotificationsBadge(data.count);
+                    updateNotificationsMenu(data.notifications);
+                })
+                .catch(error => {
+                    console.log('لا يمكن تحميل الإشعارات:', error);
+                });
+        }
+
+        function updateNotificationsBadge(count) {
+            const badge = document.getElementById('notificationCount');
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function updateNotificationsMenu(notifications) {
+            const menu = document.getElementById('notificationsMenu');
+            const noNotifications = document.getElementById('noNotifications');
+            
+            // إزالة الإشعارات القديمة
+            menu.querySelectorAll('.notification-item-menu').forEach(item => {
+                item.remove();
             });
             
-            // إغلاق القوائم بمفتاح Escape
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-                        menu.classList.remove('show');
-                        const toggle = menu.parentElement.querySelector('.dropdown-toggle');
-                        if (toggle) {
-                            toggle.setAttribute('aria-expanded', 'false');
-                            toggle.focus();
-                        }
-                    });
-                }
+            if (notifications.length > 0) {
+                noNotifications.style.display = 'none';
+                notifications.forEach(notification => {
+                    const item = document.createElement('li');
+                    item.className = 'notification-item-menu';
+                    item.innerHTML = `
+                        <a class="dropdown-item" href="#" onclick="markAsRead(${notification.id})">
+                            <small class="text-muted">${notification.created_at}</small><br>
+                            <strong>${notification.title}</strong><br>
+                            <span class="text-muted">${notification.message}</span>
+                        </a>
+                    `;
+                    menu.appendChild(item);
+                });
+            } else {
+                noNotifications.style.display = 'block';
+            }
+        }
+
+        function markAsRead(notificationId) {
+            fetch('<?= BASE_URL ?>api/mark_notification_read.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: notificationId })
+            })
+            .then(() => {
+                loadNotifications();
             });
         }
 
-        // دالة لتأكيد الحذف
-        function confirmDelete(message = 'هل أنت متأكد من الحذف؟') {
-            return confirm(message);
-        }
-
-        // دالة لعرض رسائل النجاح
-        function showSuccess(message) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-success alert-dismissible fade show';
-            alertDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        function showSystemNotification(title, message, type = 'info') {
+            const container = document.getElementById('notificationsContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification-item ${type}`;
+            notification.innerHTML = `
+                <strong>${title}</strong><br>
+                <span>${message}</span>
+                <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
             `;
-
-            const container = document.querySelector('.container');
-            if (container) {
-                container.insertBefore(alertDiv, container.firstChild);
-            }
-        }
-
-        // دالة لعرض رسائل الخطأ
-        function showError(message) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-danger alert-dismissible fade show';
-            alertDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-
-            const container = document.querySelector('.container');
-            if (container) {
-                container.insertBefore(alertDiv, container.firstChild);
-            }
+            
+            container.appendChild(notification);
+            
+            // إزالة الإشعار تلقائياً بعد 5 ثواني
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
         }
     </script>
+</body>
+</html>
