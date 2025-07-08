@@ -1,510 +1,524 @@
 <?php
-// تضمين ملفات الاتصال بقاعدة البيانات والتوثيق
 require_once '../../includes/db.php';
-
+require_once '../../includes/auth.php';
 require_once '../../includes/functions.php';
-require_once '../../includes/fpdf/fpdf.php';
 
-// التحقق من المعلمات المطلوبة
-$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
-$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
-$report_type = isset($_GET['report_type']) ? $_GET['report_type'] : 'all';
+// التحقق من الصلاحيات
+if (!isset($_SESSION['user_type']) || $_SESSION['user_type'] !== 'admin') {
+    http_response_code(403);
+    exit("غير مصرح لك بالوصول لهذه الصفحة");
+}
 
-// إنشاء فئة PDF مخصصة مع دعم اللغة العربية
-class PDF extends FPDF {
-    function Header() {
-        // الشعار (إذا كان متوفرًا)
-        // $this->Image('logo.png', 10, 10, 30);
-        
-        // الخط والعنوان
-        $this->SetFont('aealarabiya', 'B', 18);
-        $this->Cell(0, 10, 'التقرير الشامل', 0, 1, 'C');
-        
-        // تاريخ التقرير
-        $this->SetFont('aealarabiya', '', 12);
-        $this->Cell(0, 10, 'من ' . $_GET['start_date'] . ' إلى ' . $_GET['end_date'], 0, 1, 'C');
-        
-        // خط تحت العنوان
-        $this->Line(10, $this->GetY(), 200, $this->GetY());
-        $this->Ln(5);
-    }
-    
-    function Footer() {
-        $this->SetY(-15);
-        $this->SetFont('aealarabiya', 'I', 8);
-        $this->Cell(0, 10, 'الصفحة ' . $this->PageNo() . '/{nb}', 0, 0, 'C');
-    }
-    
-    function ChapterTitle($title) {
-        $this->SetFont('aealarabiya', 'B', 14);
-        $this->SetFillColor(220, 220, 220);
-        $this->Cell(0, 10, $title, 0, 1, 'R', true);
-        $this->Ln(5);
-    }
-    
-    function SummaryRow($label, $value) {
-        $this->SetFont('aealarabiya', '', 12);
-        $this->Cell(100, 10, $label, 0, 0, 'R');
-        $this->Cell(80, 10, $value, 0, 1, 'L');
-    }
-    
-    function TableHeader($headers) {
-        $this->SetFont('aealarabiya', 'B', 12);
-        $this->SetFillColor(220, 220, 220);
-        
-        $width = 190 / count($headers);
-        foreach ($headers as $header) {
-            $this->Cell($width, 8, $header, 1, 0, 'C', true);
+// معالجة المعاملات
+$report_type = $_GET['report_type'] ?? 'overview';
+$start_date = $_GET['start_date'] ?? date('Y-m-01');
+$end_date = $_GET['end_date'] ?? date('Y-m-d');
+
+// استخدام نفس دوال جلب البيانات من صفحة التقارير الرئيسية
+include_once '../reports.php';
+
+// جلب البيانات حسب نوع التقرير
+$data = getReportData($conn, $start_date, $end_date, $report_type);
+
+// تعيين عنوان التقرير
+$report_titles = [
+    'overview' => 'نظرة عامة',
+    'bookings' => 'تقرير الحجوزات',
+    'financial' => 'التقرير المالي',
+    'rooms' => 'تقرير الغرف',
+    'employees' => 'تقرير الموظفين'
+];
+
+$report_title = $report_titles[$report_type] ?? 'تقرير';
+?>
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $report_title ?> - فندق مارينا</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
         }
-        $this->Ln();
-    }
-    
-    function TableRow($data) {
-        $this->SetFont('aealarabiya', '', 10);
         
-        $width = 190 / count($data);
-        foreach ($data as $value) {
-            $this->Cell($width, 8, $value, 1, 0, 'C');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        $this->Ln();
-    }
-}
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            color: #333;
+            direction: rtl;
+            text-align: right;
+            line-height: 1.6;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #007bff;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .header h2 {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .report-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .report-info table {
+            width: 100%;
+        }
+        
+        .report-info td {
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+        
+        .section-title {
+            background: #007bff;
+            color: white;
+            padding: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: right;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        
+        .text-center { text-align: center; }
+        .text-success { color: #28a745; }
+        .text-danger { color: #dc3545; }
+        .text-warning { color: #ffc107; }
+        .text-primary { color: #007bff; }
+        
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            color: white;
+        }
+        
+        .badge-success { background: #28a745; }
+        .badge-secondary { background: #6c757d; }
+        
+        @media print {
+            .no-print { display: none !important; }
+            .section { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏨 فندق مارينا</h1>
+        <h2><?= $report_title ?></h2>
+        <p>تقرير مُنشأ في: <?= date('d/m/Y H:i:s') ?></p>
+    </div>
 
-// إنشاء وضبط الملف
-$pdf = new PDF();
-$pdf->AddFont('aealarabiya', '', 'aealarabiya.php');
-$pdf->AddFont('aealarabiya', 'B', 'aealarabiya.php');
-$pdf->AddFont('aealarabiya', 'I', 'aealarabiya.php');
-$pdf->AliasNbPages();
-$pdf->AddPage();
-$pdf->SetFont('aealarabiya', '', 12);
-$pdf->SetRightMargin(10);
-$pdf->SetLeftMargin(10);
-$pdf->SetAutoPageBreak(true, 15);
+    <div class="report-info">
+        <table>
+            <tr>
+                <td><strong>نوع التقرير:</strong></td>
+                <td><?= $report_title ?></td>
+                <td><strong>من تاريخ:</strong></td>
+                <td><?= date('d/m/Y', strtotime($start_date)) ?></td>
+            </tr>
+            <tr>
+                <td><strong>إلى تاريخ:</strong></td>
+                <td><?= date('d/m/Y', strtotime($end_date)) ?></td>
+                <td><strong>عدد الأيام:</strong></td>
+                <td><?= (strtotime($end_date) - strtotime($start_date)) / 86400 + 1 ?> يوم</td>
+            </tr>
+        </table>
+    </div>
 
-// تحديد أي تقرير سيتم إنشاؤه
-switch ($report_type) {
-    case 'revenue':
-        generateRevenueReport($conn, $pdf, $start_date, $end_date);
-        break;
-    case 'expenses':
-        generateExpensesReport($conn, $pdf, $start_date, $end_date);
-        break;
-    case 'occupancy':
-        generateOccupancyReport($conn, $pdf, $start_date, $end_date);
-        break;
-    case 'rooms':
-        generateRoomsReport($conn, $pdf, $start_date, $end_date);
-        break;
-    case 'withdrawals':
-        generateWithdrawalsReport($conn, $pdf, $start_date, $end_date);
-        break;
-    case 'all':
-    default:
-        generateComprehensiveReport($conn, $pdf, $start_date, $end_date);
-        break;
-}
+    <?php if ($report_type === 'overview'): ?>
+        <!-- نظرة عامة -->
+        <div class="section">
+            <div class="section-title">📊 الإحصائيات العامة</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value"><?= number_format($data['bookings']['total_bookings']) ?></div>
+                    <div class="stat-label">إجمالي الحجوزات</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value"><?= number_format($data['revenue']['total_revenue']) ?></div>
+                    <div class="stat-label">إجمالي الإيرادات (ريال)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value"><?= number_format($data['expenses']['total_expenses'] ?? 0) ?></div>
+                    <div class="stat-label">إجمالي المصروفات (ريال)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value"><?= number_format($data['revenue']['total_revenue'] - ($data['expenses']['total_expenses'] ?? 0)) ?></div>
+                    <div class="stat-label">صافي الربح (ريال)</div>
+                </div>
+            </div>
+        </div>
 
-// إخراج الملف
-$pdf->Output('comprehensive_report.pdf', 'D');
-exit;
+        <div class="section">
+            <div class="section-title">🏨 إحصائيات الغرف</div>
+            <table>
+                <tr>
+                    <th>النوع</th>
+                    <th>العدد</th>
+                    <th>النسبة</th>
+                </tr>
+                <tr>
+                    <td>إجمالي الغرف</td>
+                    <td><?= $data['rooms']['total_rooms'] ?></td>
+                    <td>100%</td>
+                </tr>
+                <tr>
+                    <td>الغرف المتاحة</td>
+                    <td class="text-success"><?= $data['rooms']['available_rooms'] ?></td>
+                    <td><?= $data['rooms']['total_rooms'] > 0 ? number_format(($data['rooms']['available_rooms'] / $data['rooms']['total_rooms']) * 100, 1) : 0 ?>%</td>
+                </tr>
+                <tr>
+                    <td>الغرف المشغولة</td>
+                    <td class="text-danger"><?= $data['rooms']['occupied_rooms'] ?></td>
+                    <td><?= $data['rooms']['total_rooms'] > 0 ? number_format(($data['rooms']['occupied_rooms'] / $data['rooms']['total_rooms']) * 100, 1) : 0 ?>%</td>
+                </tr>
+            </table>
+        </div>
 
-// دالة لإنشاء تقرير الإيرادات
-function generateRevenueReport($conn, $pdf, $start_date, $end_date) {
-    $pdf->ChapterTitle('تقرير الإيرادات');
-    
-    // استعلام الإيرادات
-    $query = "
-        SELECT 
-            DATE(payment_date) as date,
-            SUM(amount) as total_revenue
-        FROM 
-            payment
-        WHERE 
-            DATE(payment_date) BETWEEN ? AND ?
-        GROUP BY 
-            DATE(payment_date)
-        ORDER BY 
-            date ASC
-    ";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $total_revenue = 0;
-    $revenue_data = [];
-    
-    while ($row = $result->fetch_assoc()) {
-        $revenue_data[] = $row;
-        $total_revenue += $row['total_revenue'];
-    }
-    
-    // عرض ملخص الإيرادات
-    $pdf->SummaryRow('إجمالي الإيرادات:', number_format($total_revenue, 2) . ' ريال');
-    $pdf->Ln(10);
-    
-    // عرض تفاصيل الإيرادات
-    $pdf->TableHeader(['التاريخ', 'المبلغ (ريال)']);
-    
-    foreach ($revenue_data as $row) {
-        $pdf->TableRow([
-            $row['date'],
-            number_format($row['total_revenue'], 2)
-        ]);
-    }
-}
+        <div class="section">
+            <div class="section-title">👥 إحصائيات الموظفين</div>
+            <table>
+                <tr>
+                    <th>البيان</th>
+                    <th>القيمة</th>
+                </tr>
+                <tr>
+                    <td>إجمالي الموظفين</td>
+                    <td><?= $data['employees']['total_employees'] ?></td>
+                </tr>
+                <tr>
+                    <td>إجمالي السحوبات</td>
+                    <td><?= number_format($data['employees']['total_withdrawals']) ?> ريال</td>
+                </tr>
+                <tr>
+                    <td>متوسط السحب للموظف</td>
+                    <td><?= $data['employees']['total_employees'] > 0 ? number_format($data['employees']['total_withdrawals'] / $data['employees']['total_employees']) : 0 ?> ريال</td>
+                </tr>
+            </table>
+        </div>
 
-// دالة لإنشاء تقرير المصروفات
-function generateExpensesReport($conn, $pdf, $start_date, $end_date) {
-    $pdf->ChapterTitle('تقرير المصروفات');
-    
-    // استعلام إجمالي المصروفات
-    $query = "SELECT SUM(amount) as total_expenses FROM expenses WHERE DATE(date) BETWEEN ? AND ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $total_expenses = $result->fetch_assoc()['total_expenses'] ?? 0;
-    
-    // عرض ملخص المصروفات
-    $pdf->SummaryRow('إجمالي المصروفات:', number_format($total_expenses, 2) . ' ريال');
-    $pdf->Ln(10);
-    
-    // استعلام المصروفات حسب الفئة
-    $query = "
-        SELECT 
-            expense_type as expense_category,
-            SUM(amount) as total_expense
-        FROM 
-            expenses
-        WHERE 
-            DATE(date) BETWEEN ? AND ?
-        GROUP BY 
-            expense_type
-        ORDER BY 
-            total_expense DESC
-    ";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    // عرض المصروفات حسب الفئة
-    $pdf->ChapterTitle('المصروفات حسب الفئة');
-    $pdf->TableHeader(['الفئة', 'المبلغ (ريال)']);
-    
-    while ($row = $result->fetch_assoc()) {
-        $pdf->TableRow([
-            $row['expense_category'],
-            number_format($row['total_expense'], 2)
-        ]);
-    }
-    
-    $pdf->Ln(10);
-    
-    // استعلام تفاصيل المصروفات
-    $query = "
-        SELECT 
-            DATE(date) as date,
-            expense_type as expense_category,
-            description,
-            amount
-        FROM 
-            expenses
-        WHERE 
-            DATE(date) BETWEEN ? AND ?
-        ORDER BY 
-            date ASC
-    ";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    // عرض تفاصيل المصروفات
-    $pdf->ChapterTitle('تفاصيل المصروفات');
-    $pdf->TableHeader(['التاريخ', 'الفئة', 'المبلغ (ريال)']);
-    
-    while ($row = $result->fetch_assoc()) {
-        $pdf->TableRow([
-            $row['date'],
-            $row['expense_category'],
-            number_format($row['amount'], 2)
-        ]);
-    }
-}
+    <?php elseif ($report_type === 'bookings'): ?>
+        <!-- تقرير الحجوزات -->
+        <div class="section">
+            <div class="section-title">📅 تقرير الحجوزات التفصيلي</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>رقم الحجز</th>
+                        <th>اسم النزيل</th>
+                        <th>رقم الغرفة</th>
+                        <th>تاريخ الوصول</th>
+                        <th>عدد الليالي</th>
+                        <th>المبلغ الإجمالي</th>
+                        <th>المدفوع</th>
+                        <th>المتبقي</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $total_amount = 0;
+                    $total_paid = 0;
+                    foreach ($data as $booking): 
+                        $booking_total = $booking['total_amount'] ?? 0;
+                        $booking_paid = $booking['total_paid'] ?? 0;
+                        $remaining = $booking_total - $booking_paid;
+                        $total_amount += $booking_total;
+                        $total_paid += $booking_paid;
+                    ?>
+                    <tr>
+                        <td><?= $booking['booking_id'] ?></td>
+                        <td><?= htmlspecialchars($booking['guest_name']) ?></td>
+                        <td><?= $booking['room_number'] ?></td>
+                        <td><?= date('d/m/Y', strtotime($booking['checkin_date'])) ?></td>
+                        <td><?= $booking['calculated_nights'] ?></td>
+                        <td><?= number_format($booking_total) ?></td>
+                        <td class="text-success"><?= number_format($booking_paid) ?></td>
+                        <td class="<?= $remaining > 0 ? 'text-danger' : 'text-success' ?>"><?= number_format($remaining) ?></td>
+                        <td>
+                            <span class="badge <?= $booking['status'] == 'محجوزة' ? 'badge-success' : 'badge-secondary' ?>">
+                                <?= $booking['status'] ?>
+                            </span>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f8f9fa; font-weight: bold;">
+                        <td colspan="5">الإجماليات</td>
+                        <td><?= number_format($total_amount) ?></td>
+                        <td class="text-success"><?= number_format($total_paid) ?></td>
+                        <td class="<?= ($total_amount - $total_paid) > 0 ? 'text-danger' : 'text-success' ?>"><?= number_format($total_amount - $total_paid) ?></td>
+                        <td>-</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
 
-// دالة لإنشاء تقرير الإشغال
-function generateOccupancyReport($conn, $pdf, $start_date, $end_date) {
-    $pdf->ChapterTitle('تقرير الإشغال');
-    
-    // استعلام إحصائيات الإشغال
-    $query = "
-        SELECT 
-            COUNT(*) as total_bookings,
-            SUM(CASE WHEN status = 'checked_in' THEN 1 ELSE 0 END) as active_bookings,
-            SUM(CASE WHEN status = 'checked_out' THEN 1 ELSE 0 END) as completed_bookings
-        FROM 
-            bookings
-        WHERE 
-            check_in BETWEEN ? AND ? OR check_out BETWEEN ? AND ?
-    ";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ssss", $start_date, $end_date, $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $occupancy_data = $result->fetch_assoc();
-    
-    // حساب معدل الإشغال
-    $occupancy_rate = 0;
-    if ($occupancy_data['total_bookings'] > 0) {
-        $occupancy_rate = ($occupancy_data['active_bookings'] / $occupancy_data['total_bookings']) * 100;
-    }
-    
-    // عرض ملخص الإشغال
-    $pdf->SummaryRow('إجمالي الحجوزات:', $occupancy_data['total_bookings']);
-    $pdf->SummaryRow('الحجوزات النشطة:', $occupancy_data['active_bookings']);
-    $pdf->SummaryRow('الحجوزات المكتملة:', $occupancy_data['completed_bookings']);
-    $pdf->SummaryRow('معدل الإشغال:', number_format($occupancy_rate, 2) . '%');
-    $pdf->Ln(10);
-    
-    // استعلام تفاصيل الحجوزات
-    $query = "
-        SELECT 
-            b.id,
-            b.guest_name,
-            r.room_number,
-            b.check_in,
-            b.check_out,
-            b.status,
-            COALESCE(SUM(p.amount), 0) as total_paid
-        FROM 
-            bookings b
-        JOIN 
-            rooms r ON b.room_id = r.id
-        LEFT JOIN 
-            payments p ON b.id = p.booking_id
-        WHERE 
-            b.check_in BETWEEN ? AND ? OR b.check_out BETWEEN ? AND ?
-        GROUP BY 
-            b.id
-        ORDER BY 
-            b.check_in ASC
-    ";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ssss", $start_date, $end_date, $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    // عرض تفاصيل الحجوزات
-    $pdf->ChapterTitle('تفاصيل الحجوزات');
-    $pdf->TableHeader(['اسم الضيف', 'رقم الغرفة', 'تاريخ الوصول', 'تاريخ المغادرة', 'المبلغ (ريال)']);
-    
-    while ($row = $result->fetch_assoc()) {
-        $pdf->TableRow([
-            $row['guest_name'],
-            $row['room_number'],
-            $row['check_in'],
-            $row['check_out'],
-            number_format($row['total_paid'], 2)
-        ]);
-    }
-}
+    <?php elseif ($report_type === 'financial'): ?>
+        <!-- التقرير المالي -->
+        <div class="section">
+            <div class="section-title">💰 التقرير المالي التفصيلي</div>
+            
+            <?php
+            // دمج البيانات حسب التاريخ
+            $financial_summary = [];
+            
+            foreach ($data['daily_revenue'] as $revenue) {
+                $date = $revenue['date'];
+                $financial_summary[$date]['revenue'] = $revenue['daily_revenue'];
+            }
+            
+            foreach ($data['daily_expenses'] as $expense) {
+                $date = $expense['date'];
+                $financial_summary[$date]['expenses'] = $expense['daily_expenses'];
+            }
+            
+            $total_revenue = 0;
+            $total_expenses = 0;
+            ?>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>الإيرادات (ريال)</th>
+                        <th>المصروفات (ريال)</th>
+                        <th>صافي الربح (ريال)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($financial_summary as $date => $financial_data): 
+                        $revenue = $financial_data['revenue'] ?? 0;
+                        $expenses = $financial_data['expenses'] ?? 0;
+                        $profit = $revenue - $expenses;
+                        $total_revenue += $revenue;
+                        $total_expenses += $expenses;
+                    ?>
+                    <tr>
+                        <td><?= date('d/m/Y', strtotime($date)) ?></td>
+                        <td class="text-success"><?= number_format($revenue) ?></td>
+                        <td class="text-danger"><?= number_format($expenses) ?></td>
+                        <td class="<?= $profit >= 0 ? 'text-success' : 'text-danger' ?>"><?= number_format($profit) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f8f9fa; font-weight: bold;">
+                        <td>الإجماليات</td>
+                        <td class="text-success"><?= number_format($total_revenue) ?></td>
+                        <td class="text-danger"><?= number_format($total_expenses) ?></td>
+                        <td class="<?= ($total_revenue - $total_expenses) >= 0 ? 'text-success' : 'text-danger' ?>"><?= number_format($total_revenue - $total_expenses) ?></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
 
-// دالة لإنشاء تقرير الغرف
-function generateRoomsReport($conn, $pdf, $start_date, $end_date) {
-    $pdf->ChapterTitle('تقرير أداء الغرف');
-    
-    // استعلام أداء الغرف
-    $query = "
-        SELECT 
-            r.room_number,
-            r.room_type,
-            COUNT(b.id) as booking_count,
-            COALESCE(SUM(p.amount), 0) as room_revenue
-        FROM 
-            rooms r
-        LEFT JOIN 
-            bookings b ON r.id = b.room_id AND (b.check_in BETWEEN ? AND ? OR b.check_out BETWEEN ? AND ?)
-        LEFT JOIN 
-            payments p ON b.id = p.booking_id
-        GROUP BY 
-            r.id
-        ORDER BY 
-            room_revenue DESC
-    ";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ssss", $start_date, $end_date, $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    // عرض تفاصيل أداء الغرف
-    $pdf->TableHeader(['رقم الغرفة', 'نوع الغرفة', 'عدد الحجوزات', 'الإيرادات (ريال)']);
-    
-    while ($row = $result->fetch_assoc()) {
-        $pdf->TableRow([
-            $row['room_number'],
-            $row['room_type'],
-            $row['booking_count'],
-            number_format($row['room_revenue'], 2)
-        ]);
-    }
-}
+    <?php elseif ($report_type === 'rooms'): ?>
+        <!-- تقرير الغرف -->
+        <div class="section">
+            <div class="section-title">🛏️ تقرير أداء الغرف</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>رقم الغرفة</th>
+                        <th>نوع الغرفة</th>
+                        <th>الحالة</th>
+                        <th>عدد الحجوزات</th>
+                        <th>الإيرادات (ريال)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $total_bookings = 0;
+                    $total_revenue = 0;
+                    foreach ($data as $room): 
+                        $total_bookings += $room['booking_count'] ?? 0;
+                        $total_revenue += $room['room_revenue'] ?? 0;
+                    ?>
+                    <tr>
+                        <td><?= $room['room_number'] ?></td>
+                        <td><?= $room['room_type'] ?></td>
+                        <td>
+                            <span class="badge <?= $room['status'] == 'شاغرة' ? 'badge-success' : 'badge-secondary' ?>">
+                                <?= $room['status'] ?>
+                            </span>
+                        </td>
+                        <td><?= $room['booking_count'] ?? 0 ?></td>
+                        <td><?= number_format($room['room_revenue'] ?? 0) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f8f9fa; font-weight: bold;">
+                        <td colspan="3">الإجماليات</td>
+                        <td><?= number_format($total_bookings) ?></td>
+                        <td><?= number_format($total_revenue) ?></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
 
-// دالة لإنشاء تقرير سحوبات الموظفين
-function generateWithdrawalsReport($conn, $pdf, $start_date, $end_date) {
-    $pdf->ChapterTitle('تقرير سحوبات الموظفين');
-    
-    // استعلام إجمالي سحوبات الموظفين
-    $query = "SELECT SUM(amount) as total_withdrawals FROM employee_withdrawals WHERE withdrawal_date BETWEEN ? AND ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $total_withdrawals = $result->fetch_assoc()['total_withdrawals'] ?? 0;
-    
-    // عرض ملخص سحوبات الموظفين
-    $pdf->SummaryRow('إجمالي سحوبات الموظفين:', number_format($total_withdrawals, 2) . ' ريال');
-    $pdf->Ln(10);
-    
-    // استعلام سحوبات الموظفين حسب الموظف
-    $query = "
-        SELECT 
-            e.name as employee_name,
-            SUM(w.amount) as total_withdrawals
-        FROM 
-            employee_withdrawals w
-        JOIN 
-            employees e ON w.employee_id = e.id
-        WHERE 
-            w.withdrawal_date BETWEEN ? AND ?
-        GROUP BY 
-            w.employee_id
-        ORDER BY 
-            total_withdrawals DESC
-    ";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    // عرض سحوبات الموظفين حسب الموظف
-    $pdf->ChapterTitle('سحوبات الموظفين حسب الموظف');
-    $pdf->TableHeader(['الموظف', 'إجمالي السحوبات (ريال)']);
-    
-    while ($row = $result->fetch_assoc()) {
-        $pdf->TableRow([
-            $row['employee_name'],
-            number_format($row['total_withdrawals'], 2)
-        ]);
-    }
-    
-    $pdf->Ln(10);
-    
-    // استعلام تفاصيل سحوبات الموظفين
-    $query = "
-        SELECT 
-            e.name as employee_name,
-            w.withdrawal_date,
-            w.amount,
-            w.notes
-        FROM 
-            employee_withdrawals w
-        JOIN 
-            employees e ON w.employee_id = e.id
-        WHERE 
-            w.withdrawal_date BETWEEN ? AND ?
-        ORDER BY 
-            w.withdrawal_date ASC
-    ";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    // عرض تفاصيل سحوبات الموظفين
-    $pdf->ChapterTitle('تفاصيل سحوبات الموظفين');
-    $pdf->TableHeader(['الموظف', 'التاريخ', 'المبلغ (ريال)']);
-    
-    while ($row = $result->fetch_assoc()) {
-        $pdf->TableRow([
-            $row['employee_name'],
-            $row['withdrawal_date'],
-            number_format($row['amount'], 2)
-        ]);
-    }
-}
+    <?php elseif ($report_type === 'employees'): ?>
+        <!-- تقرير الموظفين -->
+        <div class="section">
+            <div class="section-title">👤 تقرير الموظفين والسحوبات</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>اسم الموظف</th>
+                        <th>المنصب</th>
+                        <th>الراتب الأساسي</th>
+                        <th>إجمالي السحوبات</th>
+                        <th>الرصيد المتبقي</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $total_salaries = 0;
+                    $total_withdrawals = 0;
+                    foreach ($data as $employee): 
+                        $salary = $employee['basic_salary'] ?? 0;
+                        $withdrawals = $employee['total_withdrawals'] ?? 0;
+                        $balance = $salary - $withdrawals;
+                        $total_salaries += $salary;
+                        $total_withdrawals += $withdrawals;
+                    ?>
+                    <tr>
+                        <td><?= htmlspecialchars($employee['employee_name']) ?></td>
+                        <td><?= $employee['position'] ?? '-' ?></td>
+                        <td><?= number_format($salary) ?></td>
+                        <td class="text-warning"><?= number_format($withdrawals) ?></td>
+                        <td class="<?= $balance >= 0 ? 'text-success' : 'text-danger' ?>"><?= number_format($balance) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f8f9fa; font-weight: bold;">
+                        <td colspan="2">الإجماليات</td>
+                        <td><?= number_format($total_salaries) ?></td>
+                        <td class="text-warning"><?= number_format($total_withdrawals) ?></td>
+                        <td class="<?= ($total_salaries - $total_withdrawals) >= 0 ? 'text-success' : 'text-danger' ?>"><?= number_format($total_salaries - $total_withdrawals) ?></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
 
-// دالة لإنشاء التقرير الشامل
-function generateComprehensiveReport($conn, $pdf, $start_date, $end_date) {
-    // استعلام ملخص الإيرادات
-    $query = "SELECT SUM(amount) as total_revenue FROM payments WHERE payment_date BETWEEN ? AND ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $total_revenue = $result->fetch_assoc()['total_revenue'] ?? 0;
-    
-    // استعلام ملخص المصروفات
-    $query = "SELECT SUM(amount) as total_expenses FROM expenses WHERE expense_date BETWEEN ? AND ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $total_expenses = $result->fetch_assoc()['total_expenses'] ?? 0;
-    
-    // استعلام ملخص سحوبات الموظفين
-    $query = "SELECT SUM(amount) as total_withdrawals FROM employee_withdrawals WHERE withdrawal_date BETWEEN ? AND ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $total_withdrawals = $result->fetch_assoc()['total_withdrawals'] ?? 0;
-    
-    // حساب صافي الربح
-    $net_profit = $total_revenue - $total_expenses;
-    
-    // عرض ملخص التقرير
-    $pdf->ChapterTitle('ملخص التقرير');
-    $pdf->SummaryRow('إجمالي الإيرادات:', number_format($total_revenue, 2) . ' ريال');
-    $pdf->SummaryRow('إجمالي المصروفات:', number_format($total_expenses, 2) . ' ريال');
-    $pdf->SummaryRow('صافي الربح:', number_format($net_profit, 2) . ' ريال');
-    $pdf->SummaryRow('إجمالي سحوبات الموظفين:', number_format($total_withdrawals, 2) . ' ريال');
-    $pdf->Ln(10);
-    
-    // إنشاء تقرير الإيرادات
-    generateRevenueReport($conn, $pdf, $start_date, $end_date);
-    
-    // إضافة صفحة جديدة
-    $pdf->AddPage();
-    
-    // إنشاء تقرير المصروفات
-    generateExpensesReport($conn, $pdf, $start_date, $end_date);
-    
-    // إضافة صفحة جديدة
-    $pdf->AddPage();
-    
-    // إنشاء تقرير الإشغال
-    generateOccupancyReport($conn, $pdf, $start_date, $end_date);
-    
-    // إضافة صفحة جديدة
-    $pdf->AddPage();
-    
-    // إنشاء تقرير الغرف
-    generateRoomsReport($conn, $pdf, $start_date, $end_date);
-    
-    // إضافة صفحة جديدة
-    $pdf->AddPage();
-    
-    // إنشاء تقرير سحوبات الموظفين
-    generateWithdrawalsReport($conn, $pdf, $start_date, $end_date);
-}
+    <?php endif; ?>
+
+    <div class="footer">
+        <p>تم إنشاء هذا التقرير بواسطة نظام إدارة فندق مارينا | التاريخ: <?= date('d/m/Y H:i:s') ?> | الصفحة <span id="pageNum"></span></p>
+    </div>
+
+    <!-- زر طباعة -->
+    <div class="no-print" style="position: fixed; top: 20px; left: 20px; z-index: 1000;">
+        <button onclick="window.print()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 14px;">
+            🖨️ طباعة التقرير
+        </button>
+        <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 14px; margin-left: 10px;">
+            ❌ إغلاق
+        </button>
+    </div>
+
+    <script>
+        // طباعة تلقائية عند فتح الصفحة
+        window.onload = function() {
+            // تأخير قصير للسماح للصفحة بالتحميل بالكامل
+            setTimeout(function() {
+                window.print();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
