@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="theme-color" content="#8250bb">
+    <title>شبكة العرنكس - تسجيل الدخول</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chik.css">
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .navbar a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .navbar-reverse {
+            float: left;
+        }
+        
+        .alert-back {
+            background: rgba(0, 0, 0, 0.8);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-icon {
+            font-size: 48px;
+            color: #8250bb;
+            margin-bottom: 20px;
+        }
+        
+        .modal-icon.phone::before {
+            content: "📱";
+        }
+        
+        .modal h4 {
+            color: #333;
+            margin: 20px 0;
+        }
+        
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        .status-container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #8250bb;
+        }
+        
+        .submit-btn {
+            background: #8250bb;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+        }
+        
+        .submit-btn:hover {
+            background: #6a4198;
+        }
+        
+        .ie-fix {
+            min-height: 400px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .status-container {
+                padding: 20px;
+            }
+            
+            .navbar a {
+                display: block;
+                margin: 5px 0;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Speed Selection Alert -->
+    <div id="alert-speed" class="alert-back">
+        <div class="modal">
+            <div class="modal-icon phone"></div>
+            <div>
+                <label for="speed" style="color: #333; font-weight: bold; font-size: 1.2em;">
+                    اختر سرعة الإنترنت:
+                </label>
+            </div>
+            <div class="modal-clear"></div>
+            <div id="line"></div>
+            <div class="modal-body">
+                <h4>يرجى اختيار سرعة الإنترنت المناسبة لك 😊</h4>
+                <select id="speed" name="speed">
+                    <option value="" selected disabled>اختر السرعة المناسبة</option>
+                    <option value="speed_economic">سرعة اقتصادية 💰</option>
+                    <option value="speed_normal">سرعة عادية ⚡</option>
+                    <option value="speed_high">سرعة عالية 🚀</option>
+                    <option value="speed_very">سرعة عالية جداً 🎯</option>
+                    <option value="speed_full">سرعة كاملة 🌟</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <div class="container">
+        <div class="navbar">
+            <a href="login.html">الصفحة الرئيسية</a>
+            <a href="bundles.html">الباقات</a>
+            <div class="navbar-reverse">
+                <a href="sell-points.html">بيع النقاط</a>
+                <a href="service.html">خدمة العملاء</a>
+            </div>
+        </div>
+        
+        <!-- Login Form -->
+        <div class="status-container">
+            <div class="ie-fix">
+                <div class="login-form">
+                    <h2 style="color: #333; margin-bottom: 30px;">تسجيل الدخول</h2>
+                    
+                    <form name="sendin" action="login" method="post">
+                        <div class="form-group">
+                            <label for="username">اسم المستخدم:</label>
+                            <input type="text" id="username" name="username" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password">كلمة المرور:</label>
+                            <input type="password" id="password" name="password" required>
+                        </div>
+                        
+                        <button type="submit" class="submit-btn">دخول</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Speed selection functionality
+        document.getElementById('speed').addEventListener('change', function() {
+            const selectedSpeed = this.value;
+            if (selectedSpeed) {
+                // Hide the alert after selection
+                document.getElementById('alert-speed').style.display = 'none';
+                
+                // You can add logic here to handle the speed selection
+                console.log('Selected speed:', selectedSpeed);
+            }
+        });
+        
+        // Show speed alert on page load
+        window.addEventListener('load', function() {
+            document.getElementById('alert-speed').style.display = 'flex';
+        });
+    </script>
+</body>
+</html>
