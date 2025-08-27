@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="expires" content="-1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#8250bb">
+    <title>شبكة {{العرندس}} - تسجيل الدخول</title>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            direction: rtl;
+            text-align: right;
+        }
+        
+        .alert-back {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 400px;
+            width: 90%;
+            color: white;
+        }
+        
+        .modal-icon {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .modal-body {
+            margin-top: 10px;
+        }
+        
+        #speed {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            margin-top: 10px;
+            font-size: 14px;
+            direction: rtl;
+        }
+        
+        #navbar {
+            background-color: #8250bb;
+            padding: 10px 0;
+            text-align: center;
+        }
+        
+        #navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        #navbar a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        #navbarReverse {
+            float: left;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .statuscon {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        
+        .ie-fixMinHeight {
+            min-height: 100vh;
+        }
+        
+        h4 {
+            margin: 0 0 15px 0;
+        }
+        
+        label {
+            font-weight: bold;
+            margin-top: 2px;
+            font-size: 1em;
+        }
+        
+        #line {
+            height: 2px;
+            background-color: #8250bb;
+            margin: 10px 0;
+        }
+        
+        .modal-clear {
+            clear: both;
+        }
+    </style>
+</head>
+<body>
+    <div id="alert-speed" class="alert-back">
+        <div class="modal">
+            <div class="modal-icon phone">
+                <i class="icon-chart-bar"></i>!
+            </div>
+            <div>
+                <label for="speed">تخصيص الكرت : </label>
+            </div>
+            <div class="modal-clear"></div>
+            <div id="line"></div>
+            <div class="modal-body">
+                <h4>أختار سرعة الكرت بنفسك 👇</h4>
+                <select id="speed" name="speed">
+                    <option value="" selected disabled>اضغط لاختيار السرعة</option>
+                    <option value="speed_economic">سرعة اقتصادية 😴</option>
+                    <option value="speed_normal">سرعة متوسطة 🌨️</option>
+                    <option value="speed_high">سرعة عالية ✅</option>
+                    <option value="speed_very">سرعة عالية جدا 🚀</option>
+                    <option value="speed_full">سرعة مفتوحة 🔥</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div id="navbar">
+        <a href="http://r.net/login.html">الرئيسية</a>
+        <a href="http://r.net/bundles.html">الباقات</a>
+        <span id="navbarReverse">
+            <a href="http://r.net/sell-points.html">نقاط البيع</a>
+            <a href="http://r.net/service.html">خدماتنا</a>
+        </span>
+    </div>
+    <br><br>
+
+    <form name="sendin" action="http://r.net/login" method="post">
+        <!-- Form content will be added here -->
+    </form>
+
+    <div class="ie-fixMinHeight">
+        <div class="container">
+            <div class="statuscon">
+                <!-- Main content area -->
+                <h2>مرحباً بك في شبكة العرندس</h2>
+                <p>يرجى اختيار سرعة الكرت المناسبة لك من النافذة المنبثقة أعلاه.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Close modal functionality
+        document.getElementById('speed').addEventListener('change', function() {
+            if (this.value) {
+                document.getElementById('alert-speed').style.display = 'none';
+            }
+        });
+
+        // Time-based speed option availability
+        function checkTimeBasedOptions() {
+            var d = new Date();
+            var h = d.getHours();
+            var speedVeryOption = document.querySelector('option[value="speed_very"]');
+            
+            if (h > 15 || h < 4) {
+                speedVeryOption.disabled = true;
+                speedVeryOption.textContent = 'سرعة عالية جداً معطلة حالياً 🌙';
+            } else {
+                speedVeryOption.disabled = false;
+                speedVeryOption.textContent = 'سرعة عالية جدا 🚀';
+            }
+        }
+
+        // Run time check on page load
+        checkTimeBasedOptions();
+    </script>
+</body>
+</html>
