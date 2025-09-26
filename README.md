@@ -131,21 +131,25 @@ Configuration:
 
 ## 4) CI/CD (GitHub Actions)
 
-Workflow: .github/workflows/android.yml
-- Triggers on push to main and tags v*
-- Sets up Java 17 + Flutter stable
-- Creates android/ skeleton if missing (keeps our lib/pubspec)
-- Runs pub get + build_runner (for Drift)
-- Decodes signing keystore from KEYSTORE_BASE64 secret; writes android/key.properties using KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
-- Builds signed release APK and uploads as artifact
-- On tag v*, attaches APK to GitHub Release
+Badges:
 
-Required GitHub secrets:
-- KEYSTORE_BASE64 (base64 of upload-keystore.jks)
+- Debug: [![Android Debug APK](https://github.com/Nassaralshabi/marina-hotel-wit-app/actions/workflows/android-debug.yml/badge.svg?branch=main)](https://github.com/Nassaralshabi/marina-hotel-wit-app/actions/workflows/android-debug.yml)
+- Release: [![Android Release APK](https://github.com/Nassaralshabi/marina-hotel-wit-app/actions/workflows/android.yml/badge.svg)](https://github.com/Nassaralshabi/marina-hotel-wit-app/actions/workflows/android.yml)
+
+Workflows:
+
+- .github/workflows/android-debug.yml — Debug builds on pushes to `main`, `develop`, `feature/**`, `capy/**` and PRs into `main`/`develop`. Builds `app-debug.apk` and uploads as an artifact named `marina-hotel-android-debug-<version>-<short-sha>`.
+
+- .github/workflows/android.yml — Release builds on tags `v*` (or manual dispatch). Uses signing secrets to produce a signed `app-release.apk`, uploads it as an artifact, and on tags attaches it to the GitHub Release automatically.
+
+Required GitHub secrets (for release signing):
+- KEYSTORE_BASE64 — base64 of `upload-keystore.jks`
 - KEYSTORE_PASSWORD
 - KEY_ALIAS
 - KEY_PASSWORD
-- BASE_API_URL (optional override for builds)
+- BASE_API_URL — optional; override API URL for builds
+
+See `.github/workflows/README.md` for setup and usage details.
 
 ## 5) How to run
 

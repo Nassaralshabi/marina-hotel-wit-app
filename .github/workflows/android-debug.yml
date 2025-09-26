@@ -1,40 +1,56 @@
-name: Android Debug APK
+name: Android Debug APK (Flutter)
 
 on:
   push:
     branches:
       - main
-      - capy/cap-1-af4ee71a
-      - capy/build-marina-hotel-f-ff5e5722
+      - develop
       - 'feature/**'
+      - 'capy/**'
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/android-debug.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/android-debug.yml'
   workflow_dispatch:
     inputs:
       baseApiUrl:
-        description: 'BASE_API_URL for build (optional)'
+        description: 'Override BASE_API_URL (optional)'
         required: false
         default: ''
+
+concurrency:
+  group: debug-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-debug:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Flutter
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.2'
           channel: 'stable'
           cache: true
 
-      - name: Cache Pub (global)
+      - name: Cache Pub
         uses: actions/cache@v4
         with:
           path: |
@@ -49,39 +65,77 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('mobile/android/gradle/wrapper/gradle-wrapper.properties', 'mobile/android/build.gradle', 'mobile/android/app/build.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
-      - name: Prepare project
-        working-directory: mobile
+      - name: Tool versions
         run: |
-          if [ ! -d "android" ]; then
-            mkdir -p .capy_tmp
-            cp -r lib .capy_tmp/lib
-            cp pubspec.yaml .capy_tmp/pubspec.yaml
-            rm -rf lib pubspec.yaml
-            flutter create . --platforms=android --org com.marinaplaza --project-name marina_hotel_mobile --overwrite
-            rm -rf lib
-            mv .capy_tmp/lib ./lib
-            mv .capy_tmp/pubspec.yaml ./pubspec.yaml
-          fi
+          set -euxo pipefail
+          java -version
+          flutter --version
+          dart --version
 
       - name: Get dependencies
         working-directory: mobile
-        run: flutter pub get
+        run: |
+          set -euxo pipefail
+          flutter pub get
 
       - name: Build codegen
         working-directory: mobile
-        run: flutter pub run build_runner build --delete-conflicting-outputs
+        run: |
+          set -euxo pipefail
+          flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Configure BASE_API_URL
+        working-directory: mobile
+        env:
+          BASE_API_URL_INPUT: ${{ inputs.baseApiUrl }}
+          BASE_API_URL_SECRET: ${{ secrets.BASE_API_URL }}
+        run: |
+          set -euxo pipefail
+          API="${BASE_API_URL_INPUT}"
+          if [ -z "$API" ]; then
+            API="${BASE_API_URL_SECRET}"
+          fi
+          echo "BASE_API_URL=${API}" >> $GITHUB_ENV
+          if [ -n "$API" ]; then
+            echo "Using BASE_API_URL=$API"
+          else
+            echo "No BASE_API_URL provided; using app default"
+          fi
 
       - name: Build APK (debug)
         working-directory: mobile
         run: |
-          API="${{ github.event.inputs.baseApiUrl }}"
-          if [ -z "$API" ]; then API="http://hotelmarina.com/MARINA_HOTEL_PORTABLE/api/v1"; fi
-          echo "Using BASE_API_URL=$API"
-          flutter build apk --debug --dart-define=BASE_API_URL=$API
+          set -euxo pipefail
+          flutter build apk --debug --dart-define=BASE_API_URL="${BASE_API_URL}"
+
+      - name: Compute metadata
+        id: meta
+        working-directory: mobile
+        run: |
+          set -euxo pipefail
+          APP_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //')
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+          SHORT_SHA=${GITHUB_SHA::7}
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug.apk
+          name: marina-hotel-android-debug-${{ env.APP_VERSION }}-${{ env.SHORT_SHA }}
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+
+      - name: Build summary
+        if: always()
+        run: |
+          {
+            echo "## Android Debug APK"
+            echo ""
+            echo "- Version: ${APP_VERSION:-unknown}"
+            echo "- Commit: $GITHUB_SHA"
+            echo "- Branch: ${GITHUB_REF_NAME}"
+            echo "- Artifact: marina-hotel-android-debug-${APP_VERSION}-${SHORT_SHA}.apk"
+          } >> $GITHUB_STEP_SUMMARY
