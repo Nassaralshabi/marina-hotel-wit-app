@@ -13,6 +13,8 @@ import 'daos/employees_dao.dart';
 import 'daos/expenses_dao.dart';
 import 'daos/cash_transactions_dao.dart';
 import 'daos/payments_dao.dart';
+import 'daos/salary_withdrawals_dao.dart';
+import 'daos/cash_register_dao.dart';
 import 'providers.dart';
 
 enum SyncStatus { idle, pushing, pulling, error }
@@ -26,7 +28,9 @@ class SyncService {
         employeesDao = EmployeesDao(db, OutboxDao(db)),
         expensesDao = ExpensesDao(db, OutboxDao(db)),
         cashDao = CashTransactionsDao(db, OutboxDao(db)),
-        paymentsDao = PaymentsDao(db, OutboxDao(db));
+        paymentsDao = PaymentsDao(db, OutboxDao(db)),
+        withdrawalsDao = SalaryWithdrawalsDao(db, OutboxDao(db)),
+        registerDao = CashRegisterDao(db, OutboxDao(db));
 
   final AppDatabase db;
   final OutboxDao outboxDao;
@@ -37,6 +41,8 @@ class SyncService {
   final ExpensesDao expensesDao;
   final CashTransactionsDao cashDao;
   final PaymentsDao paymentsDao;
+  final SalaryWithdrawalsDao withdrawalsDao;
+  final CashRegisterDao registerDao;
 
   final _status = StreamController<SyncStatus>.broadcast();
   Stream<SyncStatus> get statusStream => _status.stream;
@@ -146,6 +152,14 @@ class SyncService {
       case 'payments':
         final rowP = await (db.select(db.payments)..where((t) => t.localUuid.equals(localUuid))).getSingleOrNull();
         if (rowP != null) await (db.update(db.payments)..where((t) => t.id.equals(rowP.id))).write(PaymentsCompanion(serverPaymentId: d.Value(serverId is int ? serverId : null), serverId: d.Value(serverId is int ? serverId : null), lastModified: d.Value(Time.nowEpoch())));
+        break;
+      case 'salary_withdrawals':
+        final rowW = await (db.select(db.salaryWithdrawals)..where((t) => t.localUuid.equals(localUuid))).getSingleOrNull();
+        if (rowW != null) await (db.update(db.salaryWithdrawals)..where((t) => t.id.equals(rowW.id))).write(SalaryWithdrawalsCompanion(serverId: d.Value(serverId is int ? serverId : null), lastModified: d.Value(Time.nowEpoch())));
+        break;
+      case 'cash_register':
+        final rowR = await (db.select(db.cashRegister)..where((t) => t.localUuid.equals(localUuid))).getSingleOrNull();
+        if (rowR != null) await (db.update(db.cashRegister)..where((t) => t.id.equals(rowR.id))).write(CashRegisterCompanion(serverId: d.Value(serverId is int ? serverId : null), lastModified: d.Value(Time.nowEpoch())));
         break;
     }
   }
@@ -430,6 +444,86 @@ class SyncService {
         if (op == 'delete' || data['deleted_at'] != null) {
           final target = lp ?? await (db.select(db.payments)..where((t) => t.serverPaymentId.equals(pid ?? -1))).getSingleOrNull();
           if (target != null) await paymentsDao.softDelete(target.id, originIsServer: true);
+        }
+        break;
+      case 'salary_withdrawals':
+        final wid = data['id'] as int?;
+        final lw = wid != null ? await (db.select(db.salaryWithdrawals)..where((t) => t.serverId.equals(wid))).getSingleOrNull() : null;
+        if (lw != null) {
+          if (serverTs >= lw.lastModified) {
+            await withdrawalsDao.updateById(
+              lw.id,
+              SalaryWithdrawalsCompanion(
+                employeeId: d.Value(data['employee_id'] as int?),
+                amount: d.Value((data['amount'] as num?)?.toDouble() ?? lw.amount),
+                date: d.Value(data['date'] ?? lw.date),
+                notes: d.Value(data['notes'] as String?),
+                withdrawalType: d.Value(data['withdrawal_type'] ?? lw.withdrawalType),
+                cashTransactionId: d.Value(data['cash_transaction_id'] as int?),
+                serverId: d.Value(wid),
+                origin: const d.Value('server'),
+              ),
+              originIsServer: true,
+            );
+          }
+        } else {
+          await withdrawalsDao.insertOne(
+            SalaryWithdrawalsCompanion(
+              employeeId: d.Value(data['employee_id'] as int?),
+              amount: d.Value((data['amount'] as num?)?.toDouble() ?? 0),
+              date: d.Value(data['date'] ?? Time.safeIsoToDateString(Time.nowIso())),
+              notes: d.Value(data['notes'] as String?),
+              withdrawalType: d.Value(data['withdrawal_type'] ?? 'cash'),
+              cashTransactionId: d.Value(data['cash_transaction_id'] as int?),
+              serverId: d.Value(wid),
+            ),
+            originIsServer: true,
+          );
+        }
+        if (op == 'delete' || data['deleted_at'] != null) {
+          final target = lw ?? await (db.select(db.salaryWithdrawals)..where((t) => t.serverId.equals(wid ?? -1))).getSingleOrNull();
+          if (target != null) await withdrawalsDao.softDelete(target.id, originIsServer: true);
+        }
+        break;
+      case 'cash_register':
+        final rid = data['id'] as int?;
+        final lr = rid != null ? await (db.select(db.cashRegister)..where((t) => t.serverId.equals(rid))).getSingleOrNull() : null;
+        if (lr != null) {
+          if (serverTs >= lr.lastModified) {
+            await registerDao.updateById(
+              lr.id,
+              CashRegisterCompanion(
+                date: d.Value(data['date'] ?? lr.date),
+                openingBalance: d.Value((data['opening_balance'] as num?)?.toDouble() ?? lr.openingBalance),
+                totalIncome: d.Value((data['total_income'] as num?)?.toDouble() ?? lr.totalIncome),
+                totalExpense: d.Value((data['total_expense'] as num?)?.toDouble() ?? lr.totalExpense),
+                closingBalance: d.Value((data['closing_balance'] as num?)?.toDouble()),
+                status: d.Value(data['status'] ?? lr.status),
+                notes: d.Value(data['notes'] as String?),
+                serverId: d.Value(rid),
+                origin: const d.Value('server'),
+              ),
+              originIsServer: true,
+            );
+          }
+        } else {
+          await registerDao.insertOne(
+            CashRegisterCompanion(
+              date: d.Value(data['date'] ?? Time.safeIsoToDateString(Time.nowIso())),
+              openingBalance: d.Value((data['opening_balance'] as num?)?.toDouble() ?? 0),
+              totalIncome: d.Value((data['total_income'] as num?)?.toDouble() ?? 0),
+              totalExpense: d.Value((data['total_expense'] as num?)?.toDouble() ?? 0),
+              closingBalance: d.Value((data['closing_balance'] as num?)?.toDouble()),
+              status: d.Value(data['status'] ?? 'open'),
+              notes: d.Value(data['notes'] as String?),
+              serverId: d.Value(rid),
+            ),
+            originIsServer: true,
+          );
+        }
+        if (op == 'delete' || data['deleted_at'] != null) {
+          final target = lr ?? await (db.select(db.cashRegister)..where((t) => t.serverId.equals(rid ?? -1))).getSingleOrNull();
+          if (target != null) await registerDao.softDelete(target.id, originIsServer: true);
         }
         break;
     }

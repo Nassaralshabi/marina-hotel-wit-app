@@ -461,20 +461,14 @@ class SettingsEmployeesScreen extends ConsumerWidget {
                   if (employee == null) {
                     await repo.create(
                       name: nameController.text.trim(),
-                      position: positionController.text.trim(),
-                      salary: double.parse(salaryController.text),
-                      phone: phoneController.text.trim(),
-                      hireDate: hireDateController.text,
+                      basicSalary: double.parse(salaryController.text),
                       status: status,
                     );
                   } else {
                     await repo.update(
-                      employee.localUuid,
+                      employee.id,
                       name: nameController.text.trim(),
-                      position: positionController.text.trim(),
-                      salary: double.parse(salaryController.text),
-                      phone: phoneController.text.trim(),
-                      hireDate: hireDateController.text,
+                      basicSalary: double.parse(salaryController.text),
                       status: status,
                     );
                   }
@@ -498,57 +492,83 @@ class SettingsEmployeesScreen extends ConsumerWidget {
     );
   }
 
-  void _showSalaryWithdrawalDialog(BuildContext context, WidgetRef ref, Employee employee) {
+  void _showSalaryWithdrawalDialog(BuildContext context, WidgetRef ref, Employee employee) async {
     final amountController = TextEditingController();
     final noteController = TextEditingController();
+    final repo = ref.read(salaryWithdrawalsRepoProvider);
+    final month = DateTime.now();
+    final withdrawn = await repo.monthlyWithdrawnAmount(employee.id, month);
+    final remaining = (employee.salary - withdrawn).clamp(0, double.infinity);
 
     showDialog(
       context: context,
       builder: (context) => Directionality(
         textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: Text('سحب راتب - ${employee.name}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('الراتب الأساسي: ${employee.salary.toStringAsFixed(0)} ر.س'),
-              const SizedBox(height: 12),
-              TextField(
-                controller: amountController,
-                decoration: const InputDecoration(
-                  labelText: 'المبلغ المسحوب*',
-                  border: OutlineInputBorder(),
-                  suffixText: 'ر.س',
+        child: StatefulBuilder(
+          builder: (ctx, setD) => AlertDialog(
+            title: Text('سحب راتب - ${employee.name}'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('الراتب الأساسي: ${employee.salary.toStringAsFixed(0)} ر.س'),
+                const SizedBox(height: 6),
+                Text('المسحوب هذا الشهر: ${withdrawn.toStringAsFixed(0)} ر.س'),
+                const SizedBox(height: 6),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: amountController,
+                  builder: (_, v, __) {
+                    final a = double.tryParse(v.text) ?? 0;
+                    final rem = (employee.salary - withdrawn - a).clamp(-employee.salary, double.infinity);
+                    return Text('المتبقي بعد السحب: ${rem.toStringAsFixed(0)} ر.س');
+                  },
                 ),
-                keyboardType: TextInputType.number,
+                const SizedBox(height: 12),
+                TextField(
+                  controller: amountController,
+                  decoration: const InputDecoration(
+                    labelText: 'المبلغ المسحوب*',
+                    border: OutlineInputBorder(),
+                    suffixText: 'ر.س',
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteController,
+                  decoration: const InputDecoration(
+                    labelText: 'ملاحظات (اختياري)',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('إلغاء'),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: noteController,
-                decoration: const InputDecoration(
-                  labelText: 'ملاحظات (اختياري)',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 2,
+              ElevatedButton(
+                onPressed: () async {
+                  final amt = double.tryParse(amountController.text) ?? 0;
+                  if (amt <= 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أدخل مبلغاً صحيحاً')));
+                    return;
+                  }
+                  await repo.create(
+                    employeeId: employee.id,
+                    amount: amt,
+                    date: DateTime.now().toIso8601String().substring(0,10),
+                    notes: noteController.text.trim(),
+                    withdrawalType: 'cash',
+                  );
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تسجيل سحب الراتب')));
+                },
+                child: const Text('تسجيل السحب'),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('إلغاء'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: تنفيذ عملية سحب الراتب
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم تسجيل سحب الراتب (قيد التطوير)')),
-                );
-              },
-              child: const Text('تسجيل السحب'),
-            ),
-          ],
         ),
       ),
     );
@@ -560,12 +580,9 @@ class SettingsEmployeesScreen extends ConsumerWidget {
     try {
       final repo = ref.read(employeesRepoProvider);
       await repo.update(
-        employee.localUuid,
+        employee.id,
         name: employee.name,
-        position: employee.position,
-        salary: employee.salary,
-        phone: employee.phone,
-        hireDate: employee.hireDate,
+        basicSalary: employee.salary,
         status: newStatus,
       );
       

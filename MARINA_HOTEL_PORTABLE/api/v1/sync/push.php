@@ -15,6 +15,8 @@ $entities = [
     'expenses' => ['table' => 'expenses', 'pk' => 'id', 'pk_type' => 'i', 'writable' => ['expense_type'=>'s','related_id'=>'i','description'=>'s','amount'=>'d','date'=>'s','cash_transaction_id'=>'i']],
     'cash_transactions' => ['table' => 'cash_transactions', 'pk' => 'id', 'pk_type' => 'i', 'writable' => ['register_id'=>'i','transaction_type'=>'s','amount'=>'d','reference_type'=>'s','reference_id'=>'i','description'=>'s','transaction_time'=>'s','created_by'=>'i']],
     'payments' => ['table' => 'payment', 'pk' => 'payment_id', 'pk_type' => 'i', 'writable' => ['booking_id'=>'i','room_number'=>'i','amount'=>'d','payment_date'=>'s','notes'=>'s','payment_method'=>'s','revenue_type'=>'s','cash_transaction_id'=>'i']],
+    'salary_withdrawals' => ['table' => 'salary_withdrawals', 'pk' => 'id', 'pk_type' => 'i', 'writable' => ['employee_id'=>'i','amount'=>'d','date'=>'s','notes'=>'s','withdrawal_type'=>'s','cash_transaction_id'=>'i','created_by'=>'i']],
+    'cash_register' => ['table' => 'cash_register', 'pk' => 'id', 'pk_type' => 'i', 'writable' => ['date'=>'s','opening_balance'=>'d','total_income'=>'d','total_expense'=>'d','closing_balance'=>'d','status'=>'s','notes'=>'s']],
 ];
 
 $body = json_input();

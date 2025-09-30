@@ -88,6 +88,28 @@ class CashTransactions extends Table with SyncFields {
   IntColumn get createdBy => integer().nullable()();
 }
 
+class SalaryWithdrawals extends Table with SyncFields {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get employeeId => integer().nullable().references(Employees, #id)();
+  RealColumn get amount => real()();
+  TextColumn get date => text()();
+  TextColumn get notes => text().nullable()();
+  TextColumn get withdrawalType => text().withDefault(const Constant('cash'))();
+  IntColumn get cashTransactionId => integer().nullable().references(CashTransactions, #id)();
+  IntColumn get createdBy => integer().nullable()();
+}
+
+class CashRegister extends Table with SyncFields {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get date => text()();
+  RealColumn get openingBalance => real().withDefault(const Constant(0))();
+  RealColumn get totalIncome => real().withDefault(const Constant(0))();
+  RealColumn get totalExpense => real().withDefault(const Constant(0))();
+  RealColumn get closingBalance => real().nullable()();
+  TextColumn get status => text().withDefault(const Constant('open'))();
+  TextColumn get notes => text().nullable()();
+}
+
 class Payments extends Table with SyncFields {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get serverPaymentId => integer().nullable()();
@@ -136,6 +158,8 @@ class SyncState extends Table {
   Employees,
   Expenses,
   CashTransactions,
+  SalaryWithdrawals,
+  CashRegister,
   Payments,
   Outbox,
   SyncState,
@@ -143,7 +167,20 @@ class SyncState extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_open());
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) async {
+          await m.createAll();
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(salaryWithdrawals);
+            await m.createTable(cashRegister);
+          }
+        },
+      );
 }
 
 LazyDatabase _open() {

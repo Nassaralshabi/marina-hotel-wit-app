@@ -11,18 +11,21 @@ class CashTransactionsDao extends DatabaseAccessor<AppDatabase> with _$CashTrans
   CashTransactionsDao(AppDatabase db, this.outboxDao) : super(db);
   final OutboxDao outboxDao;
 
-  Future<List<CashTransaction>> list({String? type, String? from, String? to, bool includeDeleted = false}) async {
+  Future<List<CashTransaction>> list({String? type, String? from, String? to, int? registerId, bool includeDeleted = false}) async {
     final q = select(cashTransactions);
     if (!includeDeleted) q.where((t) => t.deletedAt.isNull());
+    if (registerId != null) q.where((t) => t.registerId.equals(registerId));
     if (type != null && type.isNotEmpty) q.where((t) => t.transactionType.equals(type));
     if (from != null && to != null) q.where((t) => t.transactionTime.isBiggerOrEqualValue(from) & t.transactionTime.isSmallerOrEqualValue(to));
     q.orderBy([(t) => OrderingTerm(expression: t.transactionTime, mode: OrderingMode.desc)]);
     return q.get();
   }
 
-  Stream<List<CashTransaction>> watchList({bool includeDeleted = false}) {
+  Stream<List<CashTransaction>> watchList({int? registerId, bool includeDeleted = false}) {
     final q = select(cashTransactions);
     if (!includeDeleted) q.where((t) => t.deletedAt.isNull());
+    if (registerId != null) q.where((t) => t.registerId.equals(registerId));
+    q.orderBy([(t) => OrderingTerm(expression: t.transactionTime, mode: OrderingMode.desc)]);
     return q.watch();
   }
 

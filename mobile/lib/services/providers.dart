@@ -7,6 +7,8 @@ import 'repositories/expenses_repository.dart';
 import 'repositories/cash_repository.dart';
 import 'repositories/payments_repository.dart';
 import 'repositories/notes_repository.dart';
+import 'repositories/salary_withdrawals_repository.dart';
+import 'repositories/cash_register_repository.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) => AppDatabase());
 
@@ -17,6 +19,8 @@ final expensesRepoProvider = Provider<ExpensesRepository>((ref) => ExpensesRepos
 final cashRepoProvider = Provider<CashRepository>((ref) => CashRepository(ref.read(databaseProvider)));
 final paymentsRepoProvider = Provider<PaymentsRepository>((ref) => PaymentsRepository(ref.read(databaseProvider)));
 final notesRepoProvider = Provider<NotesRepository>((ref) => NotesRepository(ref.read(databaseProvider)));
+final salaryWithdrawalsRepoProvider = Provider<SalaryWithdrawalsRepository>((ref) => SalaryWithdrawalsRepository(ref.read(databaseProvider)));
+final cashRegisterRepoProvider = Provider<CashRegisterRepository>((ref) => CashRegisterRepository(ref.read(databaseProvider)));
 
 final roomsListProvider = StreamProvider.autoDispose((ref) => ref.watch(roomsRepoProvider).watchAll());
 
@@ -28,3 +32,4 @@ final employeesListProvider = StreamProvider.autoDispose((ref) => ref.watch(empl
 final expensesListProvider = StreamProvider.autoDispose((ref) => ref.watch(expensesRepoProvider).watchAll());
 
 final cashTransactionsListProvider = StreamProvider.autoDispose((ref) => ref.watch(cashRepoProvider).watchAll());
+final todayOpenRegisterProvider = StreamProvider.autoDispose((ref) => ref.watch(cashRegisterRepoProvider).watchTodayOpen());

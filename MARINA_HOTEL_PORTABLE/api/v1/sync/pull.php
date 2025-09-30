@@ -13,6 +13,8 @@ $entities = [
     'expenses' => ['table' => 'expenses', 'pk' => 'id'],
     'cash_transactions' => ['table' => 'cash_transactions', 'pk' => 'id'],
     'payments' => ['table' => 'payment', 'pk' => 'payment_id'],
+    'salary_withdrawals' => ['table' => 'salary_withdrawals', 'pk' => 'id'],
+    'cash_register' => ['table' => 'cash_register', 'pk' => 'id'],
 ];
 
 $data = [];
