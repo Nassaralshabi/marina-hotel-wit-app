@@ -111,7 +111,6 @@ jobs:
           flutter pub run build_runner build --delete-conflicting-outputs || echo "⚠️ لم يتم العثور على ملفات للتوليد"
 
       - name: 🔐 إعداد التوقيع (إن وجد)
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
