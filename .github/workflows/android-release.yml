@@ -1,14 +1,14 @@
 name: 🚀 Android Release Build
 
-on:
+"on":
   push:
     branches:
       - main
       - 'release/**'
+      - 'capy/**'
     paths:
       - 'mobile/**'
       - '.github/workflows/android-release.yml'
-  push:
     tags:
       - 'v*'
   workflow_dispatch:
