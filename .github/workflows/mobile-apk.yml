@@ -1,0 +1,190 @@
+name: Mobile Android Build
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - main
+      - 'capy/**'
+    tags:
+      - 'v*'
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-apk.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-apk.yml'
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 'Build variant'
+        required: false
+        default: all
+        type: choice
+        options:
+          - all
+          - release
+          - debug
+      base_api_url:
+        description: 'Override BASE_API_URL'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      FLUTTER_VERSION: '3.24.3'
+      JAVA_VERSION: '17'
+      VARIANT_INPUT: ${{ github.event.inputs.variant }}
+      BASE_API_URL_INPUT: ${{ github.event.inputs.base_api_url }}
+      BASE_API_URL_SECRET: ${{ secrets.BASE_API_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+      - name: Cache pub
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            mobile/.dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('mobile/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+      - name: Extract version
+        id: version
+        working-directory: mobile
+        run: |
+          VERSION_NAME=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          echo "name=$VERSION_NAME" >> $GITHUB_OUTPUT
+      - name: Compute build flags
+        id: build_flags
+        run: |
+          variant="${{ env.VARIANT_INPUT }}"
+          if [ -z "$variant" ]; then
+            variant="all"
+          fi
+          case "$variant" in
+            release) echo "flags=--release-only" >> $GITHUB_OUTPUT ;;
+            debug) echo "flags=--debug-only" >> $GITHUB_OUTPUT ;;
+            *) echo "flags=" >> $GITHUB_OUTPUT ;;
+          esac
+          echo "variant=$variant" >> $GITHUB_OUTPUT
+      - name: Resolve BASE_API_URL
+        id: base_api
+        run: |
+          value="${{ env.BASE_API_URL_INPUT }}"
+          if [ -z "$value" ]; then
+            value="${{ env.BASE_API_URL_SECRET }}"
+          fi
+          if [ -n "$value" ]; then
+            echo "value=$value" >> $GITHUB_OUTPUT
+          fi
+      - name: Build artifacts
+        working-directory: mobile
+        env:
+          BUILD_FLAGS: ${{ steps.build_flags.outputs.flags }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          BASE_API_URL: ${{ steps.base_api.outputs.value }}
+        run: |
+          chmod +x build_apk.sh
+          ./build_apk.sh --ci --build-number "$BUILD_NUMBER" $BUILD_FLAGS
+      - name: List outputs
+        run: ls -R releases/apk
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-hotel-${{ steps.build_flags.outputs.variant }}-${{ steps.version.outputs.name }}-build-${{ github.run_number }}
+          path: |
+            releases/apk/*.apk
+            releases/apk/*.aab
+            releases/apk/*metadata.csv
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Build summary
+        if: always()
+        run: |
+          METADATA="releases/apk/marina-hotel-v${{ steps.version.outputs.name }}-metadata.csv"
+          if [ -f "$METADATA" ]; then
+            echo "## Android build summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| File | Size (bytes) | SHA-256 |" >> $GITHUB_STEP_SUMMARY
+            echo "| --- | ---: | --- |" >> $GITHUB_STEP_SUMMARY
+            tail -n +2 "$METADATA" | while IFS=, read -r date version build file size hash; do
+              echo "| $file | $size | $hash |" >> $GITHUB_STEP_SUMMARY
+            done
+          else
+            echo "Build completed" >> $GITHUB_STEP_SUMMARY
+          fi
+      - name: Prepare release notes
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+          COMMIT_SHA: ${{ github.sha }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+        run: |
+          set -euo pipefail
+          METADATA="releases/apk/marina-hotel-v${VERSION_NAME}-metadata.csv"
+          NOTES="releases/apk/release-notes.md"
+          mkdir -p "$(dirname "$NOTES")"
+          LAST_MESSAGE=$(git log -1 --pretty=%s || echo "")
+          {
+            echo "# Marina Hotel Mobile $REF_NAME"
+            echo ""
+            echo "- **Build number:** $RUN_NUMBER"
+            echo "- **Commit:** $COMMIT_SHA"
+            if [ -n "$LAST_MESSAGE" ]; then
+              echo "- **Latest commit:** $LAST_MESSAGE"
+            fi
+            echo ""
+          } > "$NOTES"
+
+          if [ -f "$METADATA" ]; then
+            {
+              echo "## Artifacts"
+              echo ""
+              echo "| File | Size (bytes) | SHA-256 |"
+              echo "| --- | ---: | --- |"
+            } >> "$NOTES"
+            tail -n +2 "$METADATA" | while IFS=, read -r date version build file size hash; do
+              printf '| %s | %s | %s |\n' "$file" "$size" "$hash"
+            done >> "$NOTES"
+            echo "" >> "$NOTES"
+          fi
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Marina Hotel Mobile ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          body_path: releases/apk/release-notes.md
+          files: |
+            releases/apk/*.apk
+            releases/apk/*.aab
+            releases/apk/*metadata.csv
+          fail_on_unmatched_files: false

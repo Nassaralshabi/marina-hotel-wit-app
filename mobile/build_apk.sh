@@ -16,6 +16,11 @@ DATE_UTC=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 OUT_DIR="$SCRIPT_DIR/../releases/apk"
 mkdir -p "$OUT_DIR"
 
+EXTRA_DART_DEFINE=()
+if [ -n "${BASE_API_URL:-}" ]; then
+  EXTRA_DART_DEFINE+=(--dart-define=BASE_API_URL="$BASE_API_URL")
+fi
+
 CI_MODE=false
 RELEASE_ONLY=false
 DEBUG_ONLY=false
@@ -37,15 +42,19 @@ flutter packages pub run build_runner build --delete-conflicting-outputs
 if [ "$RELEASE_ONLY" = false ]; then
   flutter build apk --debug \
     --target-platform android-arm,android-arm64,android-x64 \
-    --split-per-abi
+    --split-per-abi \
+    "${EXTRA_DART_DEFINE[@]}"
 fi
 
 if [ "$DEBUG_ONLY" = false ]; then
   flutter build apk --release \
     --build-number "$BUILD_NUMBER" \
     --target-platform android-arm,android-arm64,android-x64 \
-    --split-per-abi
-  flutter build appbundle --release --build-number "$BUILD_NUMBER"
+    --split-per-abi \
+    "${EXTRA_DART_DEFINE[@]}"
+  flutter build appbundle --release \
+    --build-number "$BUILD_NUMBER" \
+    "${EXTRA_DART_DEFINE[@]}"
 fi
 
 mapfile -t APK_DEBUG < <(ls build/app/outputs/flutter-apk/*-debug.apk 2>/dev/null || true)
