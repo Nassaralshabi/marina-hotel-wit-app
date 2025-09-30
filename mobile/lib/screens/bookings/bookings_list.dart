@@ -642,7 +642,6 @@ class _BookingRow extends ConsumerWidget {
             );
           },
         ),
-      ),
     );
   }
 
