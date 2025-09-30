@@ -177,17 +177,16 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('بحث في الحجوزات'),
         content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: 'اسم النزيل / الهاتف / رقم الغرفة',
-              border: OutlineInputBorder(),
-            ),
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'اسم النزيل / الهاتف / رقم الغرفة',
+            border: OutlineInputBorder(),
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
-            ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('تطبيق')),
-          ],
         ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('تطبيق')),
+        ],
       ),
     );
     if (ok == true) setState(() => _search = controller.text.trim());

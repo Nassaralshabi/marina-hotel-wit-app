@@ -704,18 +704,18 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: Row(
-            children: [
-              Icon(method.icon, color: method.color),
-              const SizedBox(width: 8),
-              Text('دفع ${method.displayName}'),
-            ],
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+          children: [
+            Icon(method.icon, color: method.color),
+            const SizedBox(width: 8),
+            Text('دفع ${method.displayName}'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                   TextField(
                     controller: amountController,
                     decoration: const InputDecoration(
