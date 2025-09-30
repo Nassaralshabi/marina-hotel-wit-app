@@ -30,7 +30,7 @@ permissions:
   checks: write
 
 concurrency:
-  group: android-debug-${{ github.ref }}
+  group: android-debug-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -73,8 +73,8 @@ jobs:
         with:
           path: |
             ~/.pub-cache
-            mobile/.dart_tool
-            mobile/build
+            .dart_tool
+            build
           key: ${{ runner.os }}-flutter-debug-${{ hashFiles('mobile/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-flutter-debug-
@@ -86,7 +86,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-            mobile/android/.gradle
+            android/.gradle
           key: ${{ runner.os }}-gradle-${{ hashFiles('mobile/android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
@@ -125,15 +125,15 @@ jobs:
             --build-name=debug-${{ github.run_number }} \
             --build-number=${{ github.run_number }}
           
-          APK_PATH="build/app/outputs/flutter-apk/app-debug.apk"
-          if [ -f "$APK_PATH" ]; then
+          if [ -f "build/app/outputs/flutter-apk/app-debug.apk" ]; then
             echo "✅ تم بناء Debug APK بنجاح"
-            ls -lh "$APK_PATH"
-            APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
+            ls -lh build/app/outputs/flutter-apk/app-debug.apk
+            APK_SIZE=$(du -h build/app/outputs/flutter-apk/app-debug.apk | cut -f1)
             echo "📦 حجم APK: $APK_SIZE"
             echo "APK_SIZE=$APK_SIZE" >> $GITHUB_ENV
           else
-            echo "❌ فشل بناء APK - الملف غير موجود: $APK_PATH"
+            echo "❌ فشل بناء APK - الملف غير موجود"
+            ls -la build/app/outputs/ || true
             exit 1
           fi
 

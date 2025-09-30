@@ -62,8 +62,8 @@ jobs:
         with:
           path: |
             ~/.pub-cache
-            mobile/.dart_tool
-            mobile/build
+            .dart_tool
+            build
           key: ${{ runner.os }}-flutter-release-${{ hashFiles('mobile/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-flutter-release-
@@ -75,7 +75,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-            mobile/android/.gradle
+            android/.gradle
           key: ${{ runner.os }}-gradle-${{ hashFiles('mobile/android/gradle/wrapper/gradle-wrapper.properties', 'mobile/android/build.gradle', 'mobile/android/app/build.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
