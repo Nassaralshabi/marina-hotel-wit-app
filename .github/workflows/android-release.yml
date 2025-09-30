@@ -6,9 +6,6 @@ name: 🚀 Android Release Build
       - main
       - 'release/**'
       - 'capy/**'
-    paths:
-      - 'mobile/**'
-      - '.github/workflows/android-release.yml'
     tags:
       - 'v*'
   workflow_dispatch:
