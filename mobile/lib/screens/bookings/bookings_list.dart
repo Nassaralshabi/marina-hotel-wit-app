@@ -174,11 +174,9 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     final controller = TextEditingController(text: _search);
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('بحث في الحجوزات'),
-          content: TextField(
+      builder: (ctx) => AlertDialog(
+        title: const Text('بحث في الحجوزات'),
+        content: TextField(
             controller: controller,
             decoration: const InputDecoration(
               labelText: 'اسم النزيل / الهاتف / رقم الغرفة',
@@ -561,9 +559,7 @@ class _BookingRow extends ConsumerWidget {
     final notesRepo = ref.read(notesRepoProvider);
     showDialog(
       context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: StreamBuilder<List<BookingNote>>(
+      builder: (ctx) => StreamBuilder<List<BookingNote>>(
           stream: notesRepo.watchByBooking(booking.id),
           builder: (context, snap) {
             final items = snap.data ?? const <BookingNote>[];

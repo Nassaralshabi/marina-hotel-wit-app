@@ -158,7 +158,7 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(bookings, bookings.guestIdIssuePlace);
             await m.addColumn(bookings, bookings.actualCheckout);
             await m.addColumn(bookings, bookings.expectedNights);
-            await m.customStatement('UPDATE bookings SET expected_nights = calculated_nights');
+            await m.runCustomStatement('UPDATE bookings SET expected_nights = calculated_nights');
           }
         },
       );

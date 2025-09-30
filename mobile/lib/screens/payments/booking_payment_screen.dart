@@ -702,10 +702,8 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
 
     showDialog(
       context: context,
-      builder: (context) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: Row(
+      builder: (context) => AlertDialog(
+        title: Row(
             children: [
               Icon(method.icon, color: method.color),
               const SizedBox(width: 8),
@@ -925,7 +923,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
     final checkin = DateTime.tryParse(widget.booking.checkinDate) ?? DateTime.now();
     final plannedCheckout = widget.booking.checkoutDate != null ? DateTime.tryParse(widget.booking.checkoutDate!) : DateTime.now();
     final actualCheckout = widget.booking.actualCheckout != null
-        ? DateTime.tryParse(widget.booking.actualCheckout!)
+        ? (DateTime.tryParse(widget.booking.actualCheckout!) ?? plannedCheckout ?? DateTime.now())
         : plannedCheckout ?? DateTime.now();
     final roomsRepo = ref.read(roomsRepoProvider);
     final room = await roomsRepo.watchByNumber(widget.booking.roomNumber).first;
