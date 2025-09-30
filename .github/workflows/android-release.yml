@@ -5,11 +5,11 @@ on:
     branches:
       - main
       - 'release/**'
-    tags:
-      - 'v*'
     paths:
       - 'mobile/**'
       - '.github/workflows/android-release.yml'
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       base_api_url:
