@@ -338,7 +338,7 @@ class _BookingRow extends ConsumerWidget {
       stream: paymentsRepo.paymentsByBooking(booking.id),
       builder: (context, snapshot) {
         final paid = snapshot.hasData ? snapshot.data!.fold<double>(0, (s, p) => s + p.amount) : 0.0;
-        final remaining = (totalAmount - paid).clamp(0, totalAmount);
+        final remaining = (totalAmount - paid).clamp(0.0, totalAmount).toDouble();
         final Color statusColor = remaining <= 0
             ? Colors.green
             : (paid > 0 ? Colors.orange : Colors.red);

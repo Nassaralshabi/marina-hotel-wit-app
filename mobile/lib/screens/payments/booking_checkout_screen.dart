@@ -112,7 +112,7 @@ class _BookingCheckoutScreenState extends ConsumerState<BookingCheckoutScreen> {
                       }
 
                       final totalPaid = payments.fold<double>(0, (sum, payment) => sum + payment.amount);
-                      final remainingAmount = (totalDue - totalPaid).clamp(0, totalDue);
+                      final remainingAmount = (totalDue - totalPaid).clamp(0.0, totalDue).toDouble();
 
                       return Column(
                         children: [
@@ -200,7 +200,7 @@ class _BookingCheckoutScreenState extends ConsumerState<BookingCheckoutScreen> {
                         stream: paymentsRepo.paymentsByBooking(widget.booking.id),
                         builder: (context, snapshot) {
                           final totalPaid = snapshot.data?.fold<double>(0, (sum, payment) => sum + payment.amount) ?? 0.0;
-                          final remainingAmount = (totalDue - totalPaid).clamp(0, totalDue);
+                          final remainingAmount = (totalDue - totalPaid).clamp(0.0, totalDue).toDouble();
                           return ElevatedButton.icon(
                             onPressed: _isProcessing || remainingAmount > 0 ? null : () => _completeCheckout(context),
                             icon: const Icon(Icons.check_circle),
@@ -415,8 +415,8 @@ class _BookingCheckoutScreenState extends ConsumerState<BookingCheckoutScreen> {
         final roomsStream = roomsRepo.watchByNumber(widget.booking.roomNumber);
         final room = await roomsStream.first;
         if (room != null) {
-          await roomsRepo.update(
-            room.id,
+          await roomsRepo.updateByRoomNumber(
+            room.roomNumber,
             status: 'شاغرة',
           );
         }

@@ -6,7 +6,9 @@ import '../../services/local_db.dart';
 import '../../utils/time.dart';
 
 class PaymentHistoryScreen extends ConsumerStatefulWidget {
-  const PaymentHistoryScreen({super.key});
+  const PaymentHistoryScreen({super.key, this.bookingId});
+
+  final int? bookingId;
 
   @override
   ConsumerState<PaymentHistoryScreen> createState() => _PaymentHistoryScreenState();
@@ -45,7 +47,9 @@ class _PaymentHistoryScreenState extends ConsumerState<PaymentHistoryScreen> {
           // قائمة المدفوعات
           Expanded(
             child: StreamBuilder<List<Payment>>(
-              stream: paymentsRepo.paymentsByBooking(-1), // -1 لجلب كل المدفوعات
+              stream: widget.bookingId != null
+                  ? paymentsRepo.paymentsByBooking(widget.bookingId)
+                  : paymentsRepo.paymentsByBooking(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());

@@ -103,7 +103,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
           onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PaymentHistoryScreen(bookingId: widget.booking.localUuid),
+              builder: (context) => PaymentHistoryScreen(bookingId: widget.booking.id),
             ),
           ),
           icon: const Icon(Icons.history),
@@ -127,7 +127,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
             builder: (context, paySnap) {
               final dbPayments = paySnap.data ?? const <db.Payment>[];
               final paidAmount = dbPayments.fold<double>(0, (s, p) => s + p.amount);
-              final remainingAmount = (totalAmount - paidAmount).clamp(0, totalAmount);
+              final remainingAmount = (totalAmount - paidAmount).clamp(0.0, totalAmount).toDouble();
               _remainingAmount = remainingAmount;
               final uiPayments = dbPayments.map(_mapDbPaymentToUi).toList();
               final summary = BookingPaymentSummary(
@@ -598,7 +598,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
             () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => PaymentHistoryScreen(bookingId: widget.booking.localUuid),
+                builder: (context) => PaymentHistoryScreen(bookingId: widget.booking.id),
               ),
             ),
           ),
@@ -832,7 +832,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
     final total = (room?.price ?? 0) * expectedNights;
     final existingPayments = await paymentsRepo.paymentsByBooking(widget.booking.id).first;
     final paidSoFar = existingPayments.fold<double>(0, (s, p) => s + p.amount);
-    final remaining = (total - paidSoFar).clamp(0, total);
+    final remaining = (total - paidSoFar).clamp(0.0, total).toDouble();
 
     if (amount > remaining) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('المبلغ أكبر من المتبقي (${remaining.toStringAsFixed(2)} ر.س)')));
@@ -924,7 +924,9 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
   void _generateInvoice(BookingPaymentSummary summary) async {
     final checkin = DateTime.tryParse(widget.booking.checkinDate) ?? DateTime.now();
     final plannedCheckout = widget.booking.checkoutDate != null ? DateTime.tryParse(widget.booking.checkoutDate!) : DateTime.now();
-    final actualCheckout = widget.booking.actualCheckout != null ? DateTime.tryParse(widget.booking.actualCheckout!) : plannedCheckout;
+    final actualCheckout = widget.booking.actualCheckout != null
+        ? DateTime.tryParse(widget.booking.actualCheckout!)
+        : plannedCheckout ?? DateTime.now();
     final roomsRepo = ref.read(roomsRepoProvider);
     final room = await roomsRepo.watchByNumber(widget.booking.roomNumber).first;
     final invoice = Invoice(
@@ -986,7 +988,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
     );
     final room = await roomsRepo.watchByNumber(widget.booking.roomNumber).first;
     if (room != null) {
-      await roomsRepo.update(room.id, status: 'شاغرة');
+      await roomsRepo.updateByRoomNumber(room.roomNumber, status: 'شاغرة');
     }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تسجيل المغادرة بنجاح وتحرير الغرفة'), backgroundColor: Colors.green));

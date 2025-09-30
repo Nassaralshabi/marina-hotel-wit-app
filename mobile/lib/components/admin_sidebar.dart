@@ -16,7 +16,9 @@ class AdminSidebar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
-    
+    final userName = auth.isAuthenticated ? 'المشرف' : 'مستخدم';
+    final userRole = auth.isAuthenticated ? 'مدير النظام' : 'ضيف';
+
     return Container(
       width: 280,
       color: AppColors.primaryColor,
@@ -88,7 +90,7 @@ class AdminSidebar extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              auth.currentUser?.name ?? 'مستخدم',
+                              userName,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -96,7 +98,7 @@ class AdminSidebar extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              auth.currentUser?.userType == 'admin' ? 'مدير النظام' : 'موظف',
+                              userRole,
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.8),
                                 fontSize: 12,

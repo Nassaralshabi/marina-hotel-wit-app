@@ -42,7 +42,7 @@ class EmployeesListScreen extends ConsumerWidget {
   Future<void> _edit(BuildContext context, WidgetRef ref, {Employee? existing}) async {
     final name = TextEditingController(text: existing?.name ?? '');
     final salary = TextEditingController(text: existing?.basicSalary.toString() ?? '');
-    String status = existing?.status ?? 'active';
+    String status = existing?.status ?? 'نشط';
 
     final ok = await showDialog<bool>(
       context: context,
@@ -68,9 +68,10 @@ class EmployeesListScreen extends ConsumerWidget {
 
     final repo = ref.read(employeesRepoProvider);
     if (existing == null) {
-      await repo.create(name: name.text.trim(), basicSalary: double.tryParse(salary.text) ?? 0, status: status);
+      await repo.create(name: name.text.trim(), salary: double.tryParse(salary.text) ?? 0, status: status);
     } else {
-      await repo.update(existing.id, name: name.text.trim(), basicSalary: double.tryParse(salary.text) ?? 0, status: status);
+      await repo.update(existing.id,
+          name: name.text.trim(), salary: double.tryParse(salary.text) ?? 0, status: status);
     }
   }
 }

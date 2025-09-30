@@ -27,9 +27,9 @@ class RoomsRepository {
     );
   }
 
-  Future<int> update(int id, {String? type, double? price, String? status, String? imageUrl}) {
+  Future<int> update(String roomNumber, {String? type, double? price, String? status, String? imageUrl}) {
     return dao.updateById(
-      id,
+      roomNumber,
       RoomsCompanion(
         type: type != null ? d.Value(type) : const d.Value.absent(),
         price: price != null ? d.Value(price) : const d.Value.absent(),
