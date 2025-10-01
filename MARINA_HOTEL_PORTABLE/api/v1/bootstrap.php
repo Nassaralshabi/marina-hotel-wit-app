@@ -5,11 +5,23 @@ if (file_exists(__DIR__ . '/../../includes/config_exe.php')) require_once __DIR_
 require_once __DIR__ . '/../../includes/db.php';
 
 $CONFIG = [
-    'jwt_secret' => getenv('JWT_SECRET') ?: 'change-me',
+    'jwt_secret' => getenv('JWT_SECRET') ?: 'marina-hotel-jwt-secret-2025',
     'jwt_ttl_hours' => 24,
     'cors_allowed_origins' => [
         'http://hotelmarina.com:2222',
-        'http://hotelmarina.com'
+        'http://hotelmarina.com',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:8080',
+        'http://127.0.0.1:8080',
+        // دعم Flutter mobile app
+        'http://localhost',
+        'http://127.0.0.1',
+        // دعم الشبكة المحلية
+        'http://192.168.1.100',
+        'http://192.168.1.1',
+        'capacitor://localhost',
+        'ionic://localhost',
     ],
 ];
 

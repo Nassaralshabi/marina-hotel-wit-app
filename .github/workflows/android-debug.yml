@@ -5,12 +5,11 @@ on:
     branches:
       - main
       - develop
-      - 'feature/**'
-      - 'bugfix/**'
-      - 'capy/**'
+      - 'release/**'
+      - 'capy/**'  # دعم جميع فروع capy
     paths:
       - 'mobile/**'
-      - '.github/workflows/android-debug.yml'
+      - '.github/workflows/**'
   pull_request:
     branches:
       - main

@@ -73,6 +73,36 @@ class ApiService {
     }
     return false;
   }
+  
+  Future<Map<String, dynamic>> loginWithDetails(String username, String password) async {
+    try {
+      final res = await _dio.post('/auth/login.php', data: jsonEncode({
+        'username': username,
+        'password': password,
+      }));
+      
+      if (res.statusCode == 200 && res.data['success'] == true) {
+        final token = res.data['data']['token'];
+        final user = res.data['data']['user'];
+        await _storage.write(key: _kToken, value: token);
+        return {
+          'success': true,
+          'user': user,
+          'token': token,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': res.data['data']?['error'] ?? 'بيانات الدخول غير صحيحة',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'حدث خطأ في الاتصال',
+      };
+    }
+  }
 
   Future<bool> ping() async {
     try {

@@ -12,7 +12,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _userCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
-  bool _loading = false;
+  bool _passwordVisible = false;
+  
+  @override
+  void dispose() {
+    _userCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,24 +50,90 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _passCtrl,
-                          obscureText: true,
-                          decoration: const InputDecoration(labelText: 'كلمة المرور'),
-                          validator: (v) => (v == null || v.isEmpty) ? 'أدخل كلمة المرور' : null,
+                          obscureText: !_passwordVisible,
+                          decoration: InputDecoration(
+                            labelText: 'كلمة المرور',
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _passwordVisible = !_passwordVisible;
+                                });
+                              },
+                            ),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return 'أدخل كلمة المرور';
+                            }
+                            if (v.length < 3) {
+                              return 'كلمة المرور يجب أن تكون 3 أحرف على الأقل';
+                            }
+                            return null;
+                          },
+                          onFieldSubmitted: (_) => _handleLogin(),
                         ),
                         const SizedBox(height: 16),
-                        if (auth.error != null)
-                          Text(auth.error!, style: const TextStyle(color: Colors.red)),
-                        const SizedBox(height: 8),
-                        FilledButton(
-                          onPressed: _loading
-                              ? null
-                              : () async {
-                                  if (!_formKey.currentState!.validate()) return;
-                                  setState(() => _loading = true);
-                                  await ref.read(authProvider.notifier).login(_userCtrl.text.trim(), _passCtrl.text);
-                                  setState(() => _loading = false);
-                                },
-                          child: _loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('دخول'),
+                        if (auth.error != null) ..[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              border: Border.all(color: Colors.red.shade200),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.error_outline, color: Colors.red.shade700),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    auth.error!,
+                                    style: TextStyle(color: Colors.red.shade700, fontSize: 14),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close, size: 18),
+                                  onPressed: () => ref.read(authProvider.notifier).clearError(),
+                                  color: Colors.red.shade700,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: auth.isLoading ? null : _handleLogin,
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: auth.isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text('تسجيل الدخول', style: TextStyle(fontSize: 16)),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // زر اختبار الاتصال
+                        TextButton(
+                          onPressed: auth.isLoading ? null : _testConnection,
+                          child: const Text('اختبار الاتصال مع الخادم'),
                         ),
                       ],
                     ),
@@ -72,5 +145,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
       ),
     );
+  }
+  
+  void _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+    
+    // مسح الخطأ السابق قبل المحاولة الجديدة
+    ref.read(authProvider.notifier).clearError();
+    
+    await ref.read(authProvider.notifier).login(
+      _userCtrl.text.trim(),
+      _passCtrl.text,
+    );
+  }
+  
+  void _testConnection() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('جاري اختبار الاتصال...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    
+    await ref.read(authProvider.notifier).checkAuthStatus();
+    final auth = ref.read(authProvider);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            auth.isAuthenticated
+                ? 'تم الاتصال بنجاح مع الخادم'
+                : 'فشل في الاتصال مع الخادم أو انتهت صلاحية الجلسة',
+          ),
+          backgroundColor: auth.isAuthenticated ? Colors.green : Colors.orange,
+        ),
+      );
+    }
   }
 }

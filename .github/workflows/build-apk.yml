@@ -1,0 +1,532 @@
+name: 🚀 Marina Hotel APK Builder
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+      - 'capy/**'  # دعم جميع فروع capy
+      - 'feature/**'
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'mobile/**'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'نوع البناء'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - 'debug'
+          - 'release'
+      base_api_url:
+        description: 'BASE_API_URL (اختياري)'
+        required: false
+        default: 'http://hotelmarina.com/MARINA_HOTEL_PORTABLE/api/v1'
+      create_release:
+        description: 'إنشاء GitHub Release'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: read
+  checks: write
+
+concurrency:
+  group: apk-build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.24.0'
+  JAVA_VERSION: '17'
+
+jobs:
+  setup:
+    name: 🔧 الإعداد والتحقق
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      build_type: ${{ steps.config.outputs.build_type }}
+      should_release: ${{ steps.config.outputs.should_release }}
+      version_name: ${{ steps.version.outputs.version_name }}
+      build_number: ${{ steps.version.outputs.build_number }}
+      
+    steps:
+      - name: ✅ جلب الكود
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🎯 تحديد نوع البناء
+        id: config
+        run: |
+          # تحديد نوع البناء بناءً على الفرع أو الدخل اليدوي
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BUILD_TYPE="${{ github.event.inputs.build_type }}"
+            SHOULD_RELEASE="${{ github.event.inputs.create_release }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]] || [[ "${{ github.ref }}" == *release* ]] || [[ "${{ github.ref }}" == refs/heads/main ]]; then
+            BUILD_TYPE="release"
+            SHOULD_RELEASE="true"
+          else
+            BUILD_TYPE="debug"
+            SHOULD_RELEASE="false"
+          fi
+          
+          echo "build_type=$BUILD_TYPE" >> $GITHUB_OUTPUT
+          echo "should_release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
+          
+          echo "🎯 نوع البناء: $BUILD_TYPE"
+          echo "📦 إنشاء Release: $SHOULD_RELEASE"
+
+      - name: 📋 حساب رقم الإصدار
+        id: version
+        working-directory: mobile
+        run: |
+          if [ -f "pubspec.yaml" ]; then
+            VERSION_NAME=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          else
+            VERSION_NAME="1.0.0"
+          fi
+          
+          BUILD_NUMBER=${{ github.run_number }}
+          COMMIT_SHORT=$(git rev-parse --short HEAD)
+          DATE_UTC=$(date -u +'%Y%m%d')
+          
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "commit_short=$COMMIT_SHORT" >> $GITHUB_OUTPUT
+          echo "date=$DATE_UTC" >> $GITHUB_OUTPUT
+          
+          echo "📦 الإصدار: v$VERSION_NAME"
+          echo "🔢 رقم البناء: $BUILD_NUMBER"
+          echo "📅 التاريخ: $DATE_UTC"
+          echo "🔗 Commit: $COMMIT_SHORT"
+
+  build-apk:
+    name: 📱 بناء APK
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      matrix:
+        include:
+          - name: "ARM64 (الأجهزة الحديثة)"
+            target: "android-arm64"
+            suffix: "arm64"
+          - name: "Universal (جميع الأجهزة)"
+            target: "android-arm,android-arm64,android-x64"
+            suffix: "universal"
+    
+    defaults:
+      run:
+        working-directory: mobile
+    
+    steps:
+      - name: ✅ جلب الكود المصدري
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ☕ تثبيت Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: 🐦 تثبيت Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 كاش الاعتماديات
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            mobile/.dart_tool
+            mobile/build
+          key: ${{ runner.os }}-flutter-${{ needs.setup.outputs.build_type }}-${{ hashFiles('mobile/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-${{ needs.setup.outputs.build_type }}-
+            ${{ runner.os }}-flutter-
+
+      - name: 🔍 فحص Flutter
+        run: |
+          echo "🔍 فحص إعداد Flutter..."
+          flutter --version
+          flutter doctor -v
+          
+          echo "🔍 فحص بنية المشروع..."
+          [ ! -d "android" ] && echo "❌ مجلد android مفقود" && exit 1
+          [ ! -f "pubspec.yaml" ] && echo "❌ ملف pubspec.yaml مفقود" && exit 1
+          echo "✅ بنية المشروع صحيحة"
+
+      - name: 📥 تحميل الاعتماديات
+        run: |
+          echo "📥 تحميل اعتماديات Flutter..."
+          flutter pub get
+          echo "✅ تم تحميل الاعتماديات بنجاح"
+
+      - name: 🔨 توليد الكود (إن وجد)
+        continue-on-error: true
+        run: |
+          echo "🔨 تشغيل build_runner..."
+          flutter pub run build_runner build --delete-conflicting-outputs || echo "⚠️ لم يتم العثور على ملفات للتوليد"
+
+      - name: 🔐 إعداد التوقيع للـ Release
+        if: needs.setup.outputs.build_type == 'release'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "🔐 إعداد مفتاح التوقيع للـ Release..."
+          
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+            
+            cat > android/key.properties << EOF
+          storeFile=upload-keystore.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+            echo "✅ تم إعداد التوقيع"
+          else
+            echo "⚠️ أسرار التوقيع مفقودة - سيتم استخدام توقيع Debug"
+          fi
+
+      - name: 📱 بناء APK (${{ matrix.name }})
+        env:
+          BASE_API_URL: ${{ github.event.inputs.base_api_url || secrets.BASE_API_URL || 'http://hotelmarina.com/MARINA_HOTEL_PORTABLE/api/v1' }}
+        run: |
+          BUILD_TYPE="${{ needs.setup.outputs.build_type }}"
+          echo "📱 بناء $BUILD_TYPE APK - ${{ matrix.name }}..."
+          echo "🌐 استخدام BASE_API_URL: $BASE_API_URL"
+          
+          # تحديد المعاملات حسب نوع البناء
+          if [ "$BUILD_TYPE" = "release" ]; then
+            BUILD_CMD="flutter build apk --release"
+            BUILD_FLAG="--release"
+          else
+            BUILD_CMD="flutter build apk --debug"
+            BUILD_FLAG="--debug"
+          fi
+          
+          # تنفيذ البناء
+          $BUILD_CMD \
+            --dart-define=BASE_API_URL="$BASE_API_URL" \
+            --build-name=${{ needs.setup.outputs.version_name }} \
+            --build-number=${{ needs.setup.outputs.build_number }} \
+            --target-platform ${{ matrix.target }} \
+            $( [ "${{ matrix.suffix }}" != "universal" ] && echo "--split-per-abi" || echo "" )
+          
+          echo "✅ تم بناء APK بنجاح"
+
+      - name: 📂 تجميع الملفات
+        run: |
+          echo "📂 تجميع ملفات APK..."
+          mkdir -p ../releases/apk
+          
+          BUILD_TYPE="${{ needs.setup.outputs.build_type }}"
+          VERSION="${{ needs.setup.outputs.version_name }}"
+          BUILD_NUM="${{ needs.setup.outputs.build_number }}"
+          SUFFIX="${{ matrix.suffix }}"
+          
+          # تحديد مجلد المخرجات
+          if [ "$BUILD_TYPE" = "release" ]; then
+            OUTPUT_DIR="build/app/outputs/flutter-apk"
+            APK_PATTERN="*-release.apk"
+          else
+            OUTPUT_DIR="build/app/outputs/flutter-apk"
+            APK_PATTERN="*-debug.apk"
+          fi
+          
+          echo "🔍 البحث في: $OUTPUT_DIR"
+          echo "🔍 نمط البحث: $APK_PATTERN"
+          
+          # نسخ ملفات APK
+          count=0
+          for apk_file in $OUTPUT_DIR/$APK_PATTERN; do
+            if [ -f "$apk_file" ]; then
+              base_name=$(basename "$apk_file")
+              
+              # تحديد اسم الملف الجديد
+              if [ "$SUFFIX" = "universal" ]; then
+                new_name="marina-hotel-v${VERSION}-build${BUILD_NUM}-${BUILD_TYPE}-universal.apk"
+              else
+                # استخراج معمارية من اسم الملف
+                if [[ "$base_name" == *arm64-v8a* ]]; then
+                  arch="arm64"
+                elif [[ "$base_name" == *armeabi-v7a* ]]; then
+                  arch="armv7"  
+                elif [[ "$base_name" == *x86_64* ]]; then
+                  arch="x86_64"
+                else
+                  arch="$SUFFIX"
+                fi
+                new_name="marina-hotel-v${VERSION}-build${BUILD_NUM}-${BUILD_TYPE}-${arch}.apk"
+              fi
+              
+              cp "$apk_file" "../releases/apk/$new_name"
+              echo "✅ نسخ: $new_name"
+              count=$((count + 1))
+            fi
+          done
+          
+          if [ $count -eq 0 ]; then
+            echo "❌ لم يتم العثور على أي ملفات APK"
+            echo "📋 محتويات $OUTPUT_DIR:"
+            ls -la $OUTPUT_DIR/ || echo "المجلد غير موجود"
+            exit 1
+          fi
+          
+          echo "📋 تم نسخ $count ملف APK"
+          echo "📋 الملفات المنسوخة:"
+          ls -lh ../releases/apk/
+
+      - name: ⬆️ رفع APK (${{ matrix.suffix }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-hotel-apk-${{ matrix.suffix }}-${{ needs.setup.outputs.build_type }}-v${{ needs.setup.outputs.version_name }}-build${{ needs.setup.outputs.build_number }}
+          path: releases/apk/*.apk
+          retention-days: ${{ needs.setup.outputs.build_type == 'release' && 90 || 14 }}
+
+  build-aab:
+    name: 📦 بناء AAB (Play Store)
+    needs: setup
+    if: needs.setup.outputs.build_type == 'release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    
+    defaults:
+      run:
+        working-directory: mobile
+    
+    steps:
+      - name: ✅ جلب الكود المصدري
+        uses: actions/checkout@v4
+
+      - name: ☕ تثبيت Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: 🐦 تثبيت Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: 📥 تحميل الاعتماديات
+        run: flutter pub get
+
+      - name: 🔐 إعداد التوقيع
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+            cat > android/key.properties << EOF
+          storeFile=upload-keystore.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+          fi
+
+      - name: 📦 بناء AAB
+        env:
+          BASE_API_URL: ${{ github.event.inputs.base_api_url || secrets.BASE_API_URL || 'http://hotelmarina.com/MARINA_HOTEL_PORTABLE/api/v1' }}
+        run: |
+          echo "📦 بناء Android App Bundle..."
+          flutter build appbundle --release \
+            --dart-define=BASE_API_URL="$BASE_API_URL" \
+            --build-name=${{ needs.setup.outputs.version_name }} \
+            --build-number=${{ needs.setup.outputs.build_number }}
+
+      - name: 📂 تجميع AAB
+        run: |
+          mkdir -p ../releases/aab
+          cp build/app/outputs/bundle/release/app-release.aab \
+             "../releases/aab/marina-hotel-v${{ needs.setup.outputs.version_name }}-build${{ needs.setup.outputs.build_number }}.aab"
+
+      - name: ⬆️ رفع AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-hotel-aab-v${{ needs.setup.outputs.version_name }}-build${{ needs.setup.outputs.build_number }}
+          path: releases/aab/*.aab
+          retention-days: 90
+
+  create-release:
+    name: 🎉 إنشاء GitHub Release
+    needs: [setup, build-apk, build-aab]
+    if: always() && needs.setup.outputs.should_release == 'true' && needs.setup.outputs.build_type == 'release'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: ✅ جلب الكود
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📥 تحميل جميع Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: 📂 تجميع ملفات Release
+        run: |
+          echo "📂 تجميع ملفات Release..."
+          mkdir -p release-files
+          
+          # نسخ جميع ملفات APK
+          find artifacts -name "*.apk" -exec cp {} release-files/ \;
+          
+          # نسخ جميع ملفات AAB
+          find artifacts -name "*.aab" -exec cp {} release-files/ \;
+          
+          echo "📋 الملفات المجمعة:"
+          ls -lh release-files/
+
+      - name: 📊 إنشاء معلومات Release
+        run: |
+          cd release-files
+          echo "📊 إنشاء معلومات Release..."
+          
+          # إنشاء ملف checksums
+          echo "# Marina Hotel v${{ needs.setup.outputs.version_name }} - Build ${{ needs.setup.outputs.build_number }}" > CHECKSUMS.md
+          echo "" >> CHECKSUMS.md
+          echo "## SHA256 Checksums" >> CHECKSUMS.md
+          echo "" >> CHECKSUMS.md
+          
+          for file in *.apk *.aab; do
+            if [ -f "$file" ]; then
+              sha256sum "$file" >> CHECKSUMS.md
+              size=$(du -h "$file" | cut -f1)
+              echo "- **$file** ($size)" >> CHECKSUMS.md
+              echo "" >> CHECKSUMS.md
+            fi
+          done
+
+      - name: 🎉 إنشاء Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.setup.outputs.version_name }}-build${{ needs.setup.outputs.build_number }}
+          name: Marina Hotel v${{ needs.setup.outputs.version_name }}
+          body: |
+            # 🏨 Marina Hotel Mobile v${{ needs.setup.outputs.version_name }}
+            
+            ## 📱 تطبيق إدارة فندقية شامل
+            
+            ### 📋 معلومات الإصدار
+            - **رقم الإصدار:** v${{ needs.setup.outputs.version_name }}
+            - **رقم البناء:** ${{ needs.setup.outputs.build_number }}
+            - **التاريخ:** $(date -u +"%Y-%m-%d")
+            - **الفرع:** ${{ github.ref_name }}
+            - **Commit:** ${{ github.sha }}
+            
+            ### ✨ المميزات الرئيسية
+            - 🏨 **إدارة الحجوزات**: نظام حجوزات متقدم مع تتبع الضيوف
+            - 💰 **نظام الدفع**: 5 طرق دفع مختلفة مع إيصالات PDF
+            - 📊 **التقارير**: تقارير شاملة للإيرادات والمصروفات
+            - 👥 **إدارة الموظفين**: تتبع الرواتب والسحوبات
+            - 🏠 **إدارة الغرف**: متابعة حالة الغرف والصيانة
+            - 📝 **الملاحظات**: نظام ملاحظات وتذكيرات
+            - 🌐 **عمل بدون إنترنت**: معمارية Offline-First
+            - 🔄 **المزامنة**: مزامنة تلقائية للبيانات
+            
+            ### 🔐 تسجيل الدخول
+            - **اسم المستخدم:** admin
+            - **كلمة المرور:** 1234
+            
+            ### 📱 ملفات التثبيت
+            - **ARM64 APK**: للأجهزة الحديثة (موصى به)
+            - **Universal APK**: لجميع الأجهزة
+            - **AAB**: لرفعه على Google Play Store
+            
+            ### 📥 طريقة التثبيت
+            1. قم بتحميل ملف APK المناسب لجهازك
+            2. فعّل "المصادر غير المعروفة" في إعدادات الأندرويد
+            3. قم بتثبيت التطبيق
+            4. سجل الدخول باستخدام admin/1234
+            
+            ### 🛠️ التقنيات المستخدمة
+            - **Flutter:** ${{ env.FLUTTER_VERSION }}
+            - **Dart:** Latest SDK
+            - **قاعدة البيانات:** SQLite مع Drift
+            - **إدارة الحالة:** Riverpod
+            - **الشبكة:** Dio HTTP Client
+            - **PDF:** تقارير وإيصالات PDF
+            
+            ### 🔧 للمطورين
+            - **API Backend:** PHP + MySQL
+            - **JWT Authentication:** نظام توثيق آمن
+            - **CORS Support:** دعم التطبيقات المتعددة المنصات
+            - **Offline Support:** عمل بدون اتصال إنترنت
+            
+            ---
+            
+            **تم البناء تلقائياً باستخدام GitHub Actions 🤖**
+          draft: false
+          prerelease: false
+          files: |
+            release-files/*
+
+  summary:
+    name: 📋 ملخص البناء
+    needs: [setup, build-apk]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📝 إنشاء الملخص
+        run: |
+          echo "## 🚀 ملخص بناء Marina Hotel APK" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 📋 تفاصيل البناء" >> $GITHUB_STEP_SUMMARY
+          echo "- **نوع البناء:** ${{ needs.setup.outputs.build_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **الإصدار:** v${{ needs.setup.outputs.version_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **رقم البناء:** ${{ needs.setup.outputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **الفرع:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **التاريخ:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 📦 الملفات المتوفرة" >> $GITHUB_STEP_SUMMARY
+          echo "يمكنك تحميل ملفات APK من Artifacts أعلاه:" >> $GITHUB_STEP_SUMMARY
+          echo "- 📱 **ARM64 APK** - للأجهزة الحديثة (موصى به)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📱 **Universal APK** - لجميع الأجهزة" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.setup.outputs.build_type }}" = "release" ]; then
+            echo "- 📦 **AAB** - لرفعه على Google Play Store" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔐 تسجيل الدخول" >> $GITHUB_STEP_SUMMARY
+          echo "- **Username:** admin" >> $GITHUB_STEP_SUMMARY  
+          echo "- **Password:** 1234" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📥 تحميل مباشر" >> $GITHUB_STEP_SUMMARY
+          echo "يمكنك تحميل الملفات من قسم **Artifacts** أعلى الصفحة" >> $GITHUB_STEP_SUMMARY
