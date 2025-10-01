@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../utils/currency_formatter.dart';
 import '../../components/app_scaffold.dart';
 import '../../services/local_db.dart' as db;
 import '../../models/payment_models.dart';
@@ -25,7 +26,7 @@ class BookingPaymentScreen extends ConsumerStatefulWidget {
 class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _currencyFmt = NumberFormat.decimalPattern('ar');
+  // تم استبدال NumberFormat بالدالة المركزية CurrencyFormatter
   PaymentMethod? _selectedMethod;
   double _remainingAmount = 0;
 
@@ -298,7 +299,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
                 context,
                 icon: Icons.attach_money,
                 label: 'سعر الليلة',
-                value: '${_currencyFmt.format(roomRate)} ر.س',
+                value: CurrencyFormatter.formatAmount(roomRate),
               ),
               _buildDetailChip(
                 context,
@@ -563,7 +564,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
       child: Column(
         children: [
           Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text('${_currencyFmt.format(amount)} ر.س', style: const TextStyle(fontSize: 12)),
+          Text(CurrencyFormatter.formatAmount(amount), style: const TextStyle(fontSize: 12)),
         ],
       ),
     );
@@ -835,7 +836,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
     final remaining = (total - paidSoFar).clamp(0, total);
 
     if (amount > remaining) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('المبلغ أكبر من المتبقي (${remaining.toStringAsFixed(2)} ر.س)')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('المبلغ أكبر من المتبقي (${CurrencyFormatter.formatAmount(remaining)})')));
       return;
     }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as d;
 import '../../components/app_scaffold.dart';
@@ -31,7 +32,7 @@ class ExpensesListScreen extends ConsumerWidget {
               return ListTile(
                 title: Text(e.description),
                 subtitle: Text('${e.expenseType} • ${e.date}'),
-                trailing: Text(e.amount.toStringAsFixed(2)),
+                trailing: Text(CurrencyFormatter.formatAmount(e.amount)),
                 onTap: () => _edit(context, ref, existing: e),
               );
             },

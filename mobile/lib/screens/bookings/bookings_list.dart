@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../utils/currency_formatter.dart';
 import '../../components/app_scaffold.dart';
 import '../../services/providers.dart';
 import '../../services/local_db.dart';
@@ -21,7 +22,7 @@ class BookingsListScreen extends ConsumerStatefulWidget {
 class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   bool _hideEnded = true;
   String _search = '';
-  final _currencyFmt = NumberFormat.decimalPattern('ar');
+  // تم استبدال NumberFormat بالدالة المركزية CurrencyFormatter
 
   @override
   Widget build(BuildContext context) {
@@ -391,7 +392,7 @@ class _BookingRow extends ConsumerWidget {
               Expanded(child: Center(child: Text(booking.roomNumber))),
               Expanded(
                 child: Center(
-                  child: Text(currencyFmt.format(pricePerNight)),
+                  child: Text(CurrencyFormatter.formatAmount(pricePerNight)),
                 ),
               ),
               Expanded(
@@ -417,8 +418,8 @@ class _BookingRow extends ConsumerWidget {
                   child: Text(nightsLabel, style: theme.textTheme.bodyMedium),
                 ),
               ),
-              Expanded(child: Center(child: Text(currencyFmt.format(paid)))),
-              Expanded(child: Center(child: Text(currencyFmt.format(remaining)))),
+              Expanded(child: Center(child: Text(CurrencyFormatter.formatAmount(paid)))),
+              Expanded(child: Center(child: Text(CurrencyFormatter.formatAmount(remaining)))),
               Expanded(
                 child: Center(
                   child: Container(

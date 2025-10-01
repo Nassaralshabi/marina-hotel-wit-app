@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as d;
 import '../../components/app_scaffold.dart';
@@ -74,8 +75,8 @@ class _BookingCheckoutScreenState extends ConsumerState<BookingCheckoutScreen> {
                         Text('الليالي المتوقعة: $expectedNights'),
                         if (actualCheckout != null)
                           Text('الليالي الفعلية: $actualNights'),
-                        Text('سعر الليلة: ${roomPrice.toStringAsFixed(2)} ريال'),
-                        Text('المبلغ المستحق: ${totalDue.toStringAsFixed(2)} ريال'),
+                        Text('سعر الليلة: ${CurrencyFormatter.formatAmount(roomPrice)}'),
+                        Text('المبلغ المستحق: ${CurrencyFormatter.formatAmount(totalDue)}'),
                         Text('الحالة: ${widget.booking.status}'),
                       ],
                     ),
@@ -149,7 +150,7 @@ class _BookingCheckoutScreenState extends ConsumerState<BookingCheckoutScreen> {
                                       color: Colors.green,
                                     ),
                                     title: Text(
-                                      '${payment.amount.toStringAsFixed(2)} ريال',
+                                      CurrencyFormatter.formatAmount(payment.amount),
                                       style: const TextStyle(fontWeight: FontWeight.bold),
                                     ),
                                     subtitle: Column(
@@ -232,7 +233,7 @@ class _BookingCheckoutScreenState extends ConsumerState<BookingCheckoutScreen> {
           style: TextStyle(fontWeight: FontWeight.bold, color: color),
         ),
         Text(
-          '${amount.toStringAsFixed(2)} ريال',
+          CurrencyFormatter.formatAmount(amount),
           style: TextStyle(fontWeight: FontWeight.bold, color: color),
         ),
       ],

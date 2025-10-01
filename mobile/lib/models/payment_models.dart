@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import '../utils/currency_formatter.dart';
 import 'package:printing/printing.dart';
 
 /// أنواع طرق الدفع المتاحة
@@ -270,7 +271,7 @@ class Receipt {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text('المبلغ:'),
-                  pw.Text('${payment.amount.toStringAsFixed(2)} ر.س'),
+                  pw.Text(CurrencyFormatter.formatAmount(payment.amount)),
                 ],
               ),
               pw.Row(
@@ -493,7 +494,7 @@ class Invoice {
                     pw.Text('تاريخ الوصول: ${_formatDate(checkinDate)}'),
                     pw.Text('تاريخ المغادرة: ${_formatDate(checkoutDate)}'),
                     pw.Text('عدد الليالي: $nights'),
-                    pw.Text('سعر الليلة: ${roomRate.toStringAsFixed(2)} ر.س'),
+                    pw.Text('سعر الليلة: ${CurrencyFormatter.formatAmount(roomRate)}'),
                   ],
                 ),
               ),
@@ -544,11 +545,11 @@ class Invoice {
                   ),
                   pw.Padding(
                     padding: const pw.EdgeInsets.all(8),
-                    child: pw.Text('${roomRate.toStringAsFixed(2)} ر.س'),
+                    child: pw.Text(CurrencyFormatter.formatAmount(roomRate)),
                   ),
                   pw.Padding(
                     padding: const pw.EdgeInsets.all(8),
-                    child: pw.Text('${totalAmount.toStringAsFixed(2)} ر.س'),
+                    child: pw.Text(CurrencyFormatter.formatAmount(totalAmount)),
                   ),
                 ],
               ),
@@ -596,7 +597,7 @@ class Invoice {
                     ),
                     pw.Padding(
                       padding: const pw.EdgeInsets.all(6),
-                      child: pw.Text('${payment.amount.toStringAsFixed(2)} ر.س', style: const pw.TextStyle(fontSize: 10)),
+                      child: pw.Text(CurrencyFormatter.formatAmount(payment.amount), style: const pw.TextStyle(fontSize: 10)),
                     ),
                   ],
                 )),
@@ -620,14 +621,14 @@ class Invoice {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text('إجمالي الفاتورة:', style: pw.TextStyle(fontSize: 14)),
-                  pw.Text('${totalAmount.toStringAsFixed(2)} ر.س', style: pw.TextStyle(fontSize: 14)),
+                  pw.Text(CurrencyFormatter.formatAmount(totalAmount), style: pw.TextStyle(fontSize: 14)),
                 ],
               ),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text('المدفوع:', style: pw.TextStyle(fontSize: 14)),
-                  pw.Text('${(totalAmount - remainingAmount).toStringAsFixed(2)} ر.س', style: pw.TextStyle(fontSize: 14)),
+                  pw.Text(CurrencyFormatter.formatAmount(totalAmount - remainingAmount), style: pw.TextStyle(fontSize: 14)),
                 ],
               ),
               pw.Divider(color: PdfColors.grey300),
@@ -635,7 +636,7 @@ class Invoice {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text('المتبقي:', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-                  pw.Text('${remainingAmount.toStringAsFixed(2)} ر.س', 
+                  pw.Text(CurrencyFormatter.formatAmount(remainingAmount), 
                     style: pw.TextStyle(
                       fontSize: 16, 
                       fontWeight: pw.FontWeight.bold,
