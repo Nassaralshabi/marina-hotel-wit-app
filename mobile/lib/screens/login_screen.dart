@@ -37,14 +37,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _userCtrl,
-                          decoration: const InputDecoration(labelText: 'اسم المستخدم'),
+                          decoration: const InputDecoration(
+                            labelText: 'اسم المستخدم',
+                            hintText: 'admin',
+                          ),
                           validator: (v) => (v == null || v.isEmpty) ? 'أدخل اسم المستخدم' : null,
                         ),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _passCtrl,
                           obscureText: true,
-                          decoration: const InputDecoration(labelText: 'كلمة المرور'),
+                          decoration: const InputDecoration(
+                            labelText: 'كلمة المرور',
+                            hintText: '1234',
+                          ),
                           validator: (v) => (v == null || v.isEmpty) ? 'أدخل كلمة المرور' : null,
                         ),
                         const SizedBox(height: 16),

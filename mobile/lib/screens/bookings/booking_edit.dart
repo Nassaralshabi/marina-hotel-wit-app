@@ -5,8 +5,13 @@ import '../../services/local_db.dart';
 import '../../utils/time.dart';
 
 class BookingEditScreen extends ConsumerStatefulWidget {
-  const BookingEditScreen({super.key, this.existing});
+  const BookingEditScreen({super.key, this.existing, this.roomNumber, this.initialGuestName, this.initialGuestPhone, this.initialGuestEmail, this.initialGuestNationality});
   final Booking? existing;
+  final String? roomNumber;
+  final String? initialGuestName;
+  final String? initialGuestPhone;
+  final String? initialGuestEmail;
+  final String? initialGuestNationality;
   @override
   ConsumerState<BookingEditScreen> createState() => _BookingEditScreenState();
 }
@@ -55,6 +60,13 @@ class _BookingEditScreenState extends ConsumerState<BookingEditScreen> {
       _idType = b.guestIdType;
     } else {
       _checkin.text = _formatDateTime(DateTime.now());
+      if (widget.roomNumber != null && widget.roomNumber!.isNotEmpty) {
+        _roomNumber.text = widget.roomNumber!;
+      }
+      if ((widget.initialGuestName ?? '').isNotEmpty) _guestName.text = widget.initialGuestName!.trim();
+      if ((widget.initialGuestPhone ?? '').isNotEmpty) _guestPhone.text = widget.initialGuestPhone!.trim();
+      if ((widget.initialGuestEmail ?? '').isNotEmpty) _guestEmail.text = widget.initialGuestEmail!.trim();
+      _guestNationality.text = (widget.initialGuestNationality ?? _guestNationality.text).trim().isEmpty ? 'يمني' : (widget.initialGuestNationality ?? _guestNationality.text).trim();
     }
     WidgetsBinding.instance.addPostFrameCallback((_) => _recalculateExpectedNights());
   }

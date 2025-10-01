@@ -82,6 +82,9 @@ class EmployeesDao extends DatabaseAccessor<AppDatabase> with _$EmployeesDaoMixi
     final m = <String, dynamic>{};
     if (comp.name.present) m['name'] = comp.name.value;
     if (comp.basicSalary.present) m['basic_salary'] = comp.basicSalary.value;
+    if (comp.position.present) m['position'] = comp.position.value;
+    if (comp.phone.present) m['phone'] = comp.phone.value;
+    if (comp.hireDate.present) m['hire_date'] = comp.hireDate.value;
     if (comp.status.present) m['status'] = comp.status.value;
     return m;
   }

@@ -4,6 +4,7 @@ import '../../components/app_scaffold.dart';
 import '../../services/providers.dart';
 import '../../services/local_db.dart';
 import '../../services/sync_service.dart';
+import '../../utils/time.dart';
 
 class SettingsEmployeesScreen extends ConsumerWidget {
   const SettingsEmployeesScreen({super.key});
@@ -469,7 +470,7 @@ class SettingsEmployeesScreen extends ConsumerWidget {
                     );
                   } else {
                     await repo.update(
-                      employee.localUuid,
+                      employee.id,
                       name: nameController.text.trim(),
                       position: positionController.text.trim(),
                       salary: double.parse(salaryController.text),
@@ -539,12 +540,41 @@ class SettingsEmployeesScreen extends ConsumerWidget {
               child: const Text('إلغاء'),
             ),
             ElevatedButton(
-              onPressed: () {
-                // TODO: تنفيذ عملية سحب الراتب
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم تسجيل سحب الراتب (قيد التطوير)')),
-                );
+              onPressed: () async {
+                final amount = double.tryParse(amountController.text.trim());
+                if (amount == null || amount <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يرجى إدخال مبلغ صحيح')));
+                  return;
+                }
+                try {
+                  final cashRepo = ref.read(cashRepoProvider);
+                  final expensesRepo = ref.read(expensesRepoProvider);
+                  final desc = noteController.text.trim().isEmpty
+                      ? 'سحب راتب - ${employee.name}'
+                      : noteController.text.trim();
+                  final nowIso = Time.nowIso();
+                  final cashId = await cashRepo.create(
+                    type: 'salary_withdrawal',
+                    amount: amount,
+                    referenceType: 'employee',
+                    referenceId: employee.id,
+                    description: desc,
+                    transactionTime: nowIso,
+                  );
+                  await expensesRepo.create(
+                    expenseType: 'salary_withdrawal',
+                    relatedId: employee.id,
+                    description: desc,
+                    amount: amount,
+                    date: Time.safeIsoToDateString(nowIso),
+                  );
+                  if (!context.mounted) return;
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم تسجيل سحب الراتب بنجاح')),);
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ أثناء التسجيل: $e')));
+                }
               },
               child: const Text('تسجيل السحب'),
             ),
@@ -560,7 +590,7 @@ class SettingsEmployeesScreen extends ConsumerWidget {
     try {
       final repo = ref.read(employeesRepoProvider);
       await repo.update(
-        employee.localUuid,
+        employee.id,
         name: employee.name,
         position: employee.position,
         salary: employee.salary,

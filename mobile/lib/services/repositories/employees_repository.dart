@@ -14,17 +14,49 @@ class EmployeesRepository {
   Stream<List<Employee>> watchAll({String? search}) => dao.watchList(search: search);
   Stream<Employee?> watchOne(int id) => dao.watchById(id);
 
-  Future<int> create({required String name, required double basicSalary, required String status}) =>
-      dao.insertOne(EmployeesCompanion(name: d.Value(name), basicSalary: d.Value(basicSalary), status: d.Value(status)));
+  Future<int> create({
+    required String name,
+    double? basicSalary,
+    double? salary,
+    String? position,
+    String? phone,
+    String? hireDate,
+    required String status,
+  }) {
+    final bs = basicSalary ?? salary ?? 0;
+    return dao.insertOne(EmployeesCompanion(
+      name: d.Value(name),
+      basicSalary: d.Value(bs),
+      position: position != null ? d.Value(position) : const d.Value.absent(),
+      phone: phone != null ? d.Value(phone) : const d.Value.absent(),
+      hireDate: hireDate != null ? d.Value(hireDate) : const d.Value.absent(),
+      status: d.Value(status),
+    ));
+  }
 
-  Future<int> update(int id, {String? name, double? basicSalary, String? status}) => dao.updateById(
-        id,
-        EmployeesCompanion(
-          name: name != null ? d.Value(name) : const d.Value.absent(),
-          basicSalary: basicSalary != null ? d.Value(basicSalary) : const d.Value.absent(),
-          status: status != null ? d.Value(status) : const d.Value.absent(),
-        ),
-      );
+  Future<int> update(
+    int id, {
+    String? name,
+    double? basicSalary,
+    double? salary,
+    String? position,
+    String? phone,
+    String? hireDate,
+    String? status,
+  }) {
+    final bs = basicSalary ?? salary;
+    return dao.updateById(
+      id,
+      EmployeesCompanion(
+        name: name != null ? d.Value(name) : const d.Value.absent(),
+        basicSalary: bs != null ? d.Value(bs) : const d.Value.absent(),
+        position: position != null ? d.Value(position) : const d.Value.absent(),
+        phone: phone != null ? d.Value(phone) : const d.Value.absent(),
+        hireDate: hireDate != null ? d.Value(hireDate) : const d.Value.absent(),
+        status: status != null ? d.Value(status) : const d.Value.absent(),
+      ),
+    );
+  }
 
   Future<int> delete(int id) => dao.softDelete(id);
 }

@@ -4,6 +4,7 @@ import '../../components/app_scaffold.dart';
 import '../../services/providers.dart';
 import '../../services/local_db.dart';
 import '../../services/sync_service.dart';
+import '../bookings/booking_edit.dart';
 
 class SettingsGuestsScreen extends ConsumerStatefulWidget {
   const SettingsGuestsScreen({super.key});
@@ -486,9 +487,15 @@ class _SettingsGuestsScreenState extends ConsumerState<SettingsGuestsScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                // TODO: إضافة حجز جديد للضيف
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('إضافة حجز جديد (قيد التطوير)')),
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => BookingEditScreen(
+                      initialGuestName: guest.name,
+                      initialGuestPhone: guest.phone,
+                      initialGuestEmail: guest.email.isNotEmpty ? guest.email : null,
+                      initialGuestNationality: guest.nationality,
+                    ),
+                  ),
                 );
               },
               child: const Text('حجز جديد'),

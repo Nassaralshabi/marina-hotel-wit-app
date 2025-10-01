@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../components/app_scaffold.dart';
 import '../../services/local_db.dart' as db;
 import '../../models/payment_models.dart';
@@ -1007,12 +1008,41 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
             child: const Text('إلغاء'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // TODO: إرسال كشف الحساب عبر WhatsApp أو SMS
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تم إرسال كشف الحساب للعميل')),
-              );
+              final phone = widget.booking.guestPhone.replaceAll(RegExp(r'[^0-9+]'), '');
+              final lines = <String>[
+                'كشف حساب الحجز',
+                'النزيل: ${widget.booking.guestName}',
+                if (phone.isNotEmpty) 'الهاتف: $phone',
+                'الغرفة: ${widget.booking.roomNumber}',
+                'إجمالي المبلغ: ${summary.totalAmount.toStringAsFixed(2)} ر.س',
+                'المدفوع: ${summary.paidAmount.toStringAsFixed(2)} ر.س',
+                'المتبقي: ${summary.remainingAmount.toStringAsFixed(2)} ر.س',
+              ];
+              final message = lines.join('\n');
+              final encoded = Uri.encodeComponent(message);
+              final wa = Uri.parse('https://wa.me/${phone.isEmpty ? '' : phone}?text=$encoded');
+              final sms = Uri.parse('sms:${phone.isEmpty ? '' : phone}?body=$encoded');
+              bool sent = false;
+              try {
+                sent = await launchUrl(wa, mode: LaunchMode.externalApplication);
+              } catch (_) {}
+              if (!sent) {
+                try {
+                  sent = await launchUrl(sms, mode: LaunchMode.externalApplication);
+                } catch (_) {}
+              }
+              if (!mounted) return;
+              if (sent) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم فتح تطبيق الإرسال لإرسال كشف الحساب')),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تعذر فتح تطبيق الإرسال على هذا الجهاز')),
+                );
+              }
             },
             child: const Text('إرسال'),
           ),
