@@ -76,7 +76,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           onFieldSubmitted: (_) => _handleLogin(),
                         ),
                         const SizedBox(height: 16),
-                        if (auth.error != null) ..[
+                        if (auth.error != null) ...[
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
