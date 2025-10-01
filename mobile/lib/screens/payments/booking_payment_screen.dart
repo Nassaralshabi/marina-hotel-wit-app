@@ -129,13 +129,13 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
               final dbPayments = paySnap.data ?? const <db.Payment>[];
               final paidAmount = dbPayments.fold<double>(0, (s, p) => s + p.amount);
               final remainingAmount = (totalAmount - paidAmount).clamp(0, totalAmount);
-              _remainingAmount = remainingAmount;
+              _remainingAmount = remainingAmount.toDouble();
               final uiPayments = dbPayments.map(_mapDbPaymentToUi).toList();
               final summary = BookingPaymentSummary(
                 bookingId: widget.booking.localUuid,
                 totalAmount: totalAmount,
                 paidAmount: paidAmount,
-                remainingAmount: remainingAmount,
+                remainingAmount: remainingAmount.toDouble(),
                 payments: uiPayments,
                 overallStatus: remainingAmount <= 0 ? PaymentStatus.completed : PaymentStatus.pending,
               );
@@ -935,7 +935,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
       guestPhone: widget.booking.guestPhone,
       roomNumber: widget.booking.roomNumber,
       checkinDate: checkin,
-      checkoutDate: actualCheckout,
+      checkoutDate: actualCheckout ?? plannedCheckout,
       nights: Time.nightsWithCutoff(checkin, checkout: actualCheckout),
       roomRate: room?.price ?? 0,
       totalAmount: summary.totalAmount,
@@ -987,7 +987,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
     );
     final room = await roomsRepo.watchByNumber(widget.booking.roomNumber).first;
     if (room != null) {
-      await roomsRepo.update(room.id, status: 'شاغرة');
+      await roomsRepo.updateByRoomNumber(room.roomNumber, status: 'شاغرة');
     }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تسجيل المغادرة بنجاح وتحرير الغرفة'), backgroundColor: Colors.green));

@@ -88,7 +88,7 @@ class SettingsEmployeesScreen extends ConsumerWidget {
     final inactiveEmployees = employees.length - activeEmployees;
     final totalSalaries = employees
         .where((e) => e.status == 'نشط')
-        .fold<double>(0.0, (sum, e) => sum + e.salary);
+        .fold<double>(0.0, (sum, e) => sum + e.basicSalary);
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -256,7 +256,7 @@ class SettingsEmployeesScreen extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: _buildDetailRow('الراتب', '${employee.salary.toStringAsFixed(0)} ر.س', Icons.attach_money),
+                  child: _buildDetailRow('الراتب', '${employee.basicSalary.toStringAsFixed(0)} ر.س', Icons.attach_money),
                 ),
                 Expanded(
                   child: _buildDetailRow('الهاتف', employee.phone, Icons.phone),
@@ -355,7 +355,7 @@ class SettingsEmployeesScreen extends ConsumerWidget {
   void _showEmployeeDialog(BuildContext context, WidgetRef ref, Employee? employee) {
     final nameController = TextEditingController(text: employee?.name ?? '');
     final positionController = TextEditingController(text: employee?.position ?? '');
-    final salaryController = TextEditingController(text: employee?.salary.toString() ?? '');
+    final salaryController = TextEditingController(text: employee?.basicSalary.toString() ?? '');
     final phoneController = TextEditingController(text: employee?.phone ?? '');
     final hireDateController = TextEditingController(text: employee?.hireDate ?? DateTime.now().toString().split(' ')[0]);
     String status = employee?.status ?? 'نشط';
@@ -512,7 +512,7 @@ class SettingsEmployeesScreen extends ConsumerWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('الراتب الأساسي: ${employee.salary.toStringAsFixed(0)} ر.س'),
+              Text('الراتب الأساسي: ${employee.basicSalary.toStringAsFixed(0)} ر.س'),
               const SizedBox(height: 12),
               TextField(
                 controller: amountController,
@@ -593,7 +593,7 @@ class SettingsEmployeesScreen extends ConsumerWidget {
         employee.id,
         name: employee.name,
         position: employee.position,
-        salary: employee.salary,
+        salary: employee.basicSalary,
         phone: employee.phone,
         hireDate: employee.hireDate,
         status: newStatus,

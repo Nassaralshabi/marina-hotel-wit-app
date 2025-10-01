@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../components/app_scaffold.dart';
@@ -104,7 +105,6 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
                   return const EmptyState(
                     title: 'لا توجد حجوزات',
                     message: 'استخدم البحث أو أضف حجزاً جديداً',
-                    icon: Icons.hotel_outlined,
                   );
                 }
 

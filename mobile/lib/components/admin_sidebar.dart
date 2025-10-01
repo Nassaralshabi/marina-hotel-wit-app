@@ -88,7 +88,7 @@ class AdminSidebar extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              auth.currentUser?.name ?? 'مستخدم',
+                              'admin',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -96,7 +96,7 @@ class AdminSidebar extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              auth.currentUser?.userType == 'admin' ? 'مدير النظام' : 'موظف',
+                              'مدير النظام',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.8),
                                 fontSize: 12,

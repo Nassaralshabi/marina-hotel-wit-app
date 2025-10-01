@@ -144,7 +144,6 @@ ThemeData buildTheme() {
       ),
       columnSpacing: 24,
       horizontalMargin: 16,
-      minWidth: 600,
     ),
     
     // List tile theme

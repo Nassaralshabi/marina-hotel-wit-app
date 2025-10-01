@@ -127,7 +127,7 @@ class _BookingCheckoutScreenState extends ConsumerState<BookingCheckoutScreen> {
                                   const SizedBox(height: 6),
                                   _buildSummaryRow('إجمالي المدفوع', totalPaid, Colors.green),
                                   const SizedBox(height: 6),
-                                  _buildSummaryRow('المتبقي', remainingAmount, remainingAmount <= 0 ? Colors.green : Colors.red),
+                                  _buildSummaryRow('المتبقي', remainingAmount.toDouble(), remainingAmount <= 0 ? Colors.green : Colors.red),
                                 ],
                               ),
                             ),
@@ -415,8 +415,8 @@ class _BookingCheckoutScreenState extends ConsumerState<BookingCheckoutScreen> {
         final roomsStream = roomsRepo.watchByNumber(widget.booking.roomNumber);
         final room = await roomsStream.first;
         if (room != null) {
-          await roomsRepo.update(
-            room.id,
+          await roomsRepo.updateByRoomNumber(
+            room.roomNumber,
             status: 'شاغرة',
           );
         }

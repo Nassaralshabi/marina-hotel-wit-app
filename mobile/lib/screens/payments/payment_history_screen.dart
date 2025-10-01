@@ -6,7 +6,8 @@ import '../../services/local_db.dart';
 import '../../utils/time.dart';
 
 class PaymentHistoryScreen extends ConsumerStatefulWidget {
-  const PaymentHistoryScreen({super.key});
+  const PaymentHistoryScreen({super.key, this.bookingId});
+  final String? bookingId;
 
   @override
   ConsumerState<PaymentHistoryScreen> createState() => _PaymentHistoryScreenState();
