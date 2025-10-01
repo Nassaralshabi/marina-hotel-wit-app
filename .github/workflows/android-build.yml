@@ -67,68 +67,64 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
       
-      # Step 7: Make Gradlew Executable
-      - name: Make Gradlew Executable
+      # Step 7: Generate Code (Drift Database Files)
+      - name: Generate Code
         run: |
-          cd mobile/android
-          chmod +x ./gradlew
+          cd mobile
+          flutter packages get
+          dart run build_runner build --delete-conflicting-outputs
       
-      # Step 8: Clean Build
-      - name: Clean Build
-        run: |
-          cd mobile/android
-          ./gradlew clean --stacktrace --no-daemon
-      
-      # Step 9: Build Debug APK (First Attempt)
+      # Step 8: Build Debug APK (First Attempt)
       - name: Build Debug APK
         id: build_apk
         continue-on-error: true
         run: |
-          cd mobile/android
-          ./gradlew assembleDebug --stacktrace --no-daemon
+          cd mobile
+          flutter build apk --debug
       
-      # Step 10: Build Debug APK (Retry with Refresh Dependencies)
+      # Step 9: Build Debug APK (Retry with Refresh Dependencies)
       - name: Build Debug APK (Retry)
         if: steps.build_apk.outcome == 'failure'
         run: |
-          cd mobile/android
-          ./gradlew assembleDebug --refresh-dependencies --stacktrace --no-daemon
+          cd mobile
+          flutter clean
+          flutter packages get
+          dart run build_runner build --delete-conflicting-outputs
+          flutter build apk --debug
       
-      # Step 11: Verify Build Success
+      # Step 10: Verify Build Success
       - name: Verify Build Success
         run: |
-          if [ ! -d "mobile/android/app/build/outputs/apk/debug" ]; then
-            echo "❌ APK build failed - debug directory does not exist"
-            exit 1
-          fi
-          
-          if ls mobile/android/app/build/outputs/apk/debug/*.apk 1> /dev/null 2>&1; then
+          cd mobile
+          if ls build/app/outputs/flutter-apk/*.apk 1> /dev/null 2>&1; then
             echo "✅ APK build successful"
-            ls -la mobile/android/app/build/outputs/apk/debug/
+            ls -la build/app/outputs/flutter-apk/
           else
             echo "❌ APK build failed - no APK files found"
+            ls -la build/app/outputs/ || true
             exit 1
           fi
       
-      # Step 12: Upload APK Artifact
+      # Step 11: Upload APK Artifact
       - name: Upload APK as artifact
         if: success()
         uses: actions/upload-artifact@v3
         with:
           name: android-debug
-          path: mobile/android/app/build/outputs/apk/debug/*.apk
+          path: mobile/build/app/outputs/flutter-apk/*.apk
           retention-days: 30
       
-      # Step 13: Display Build Information
+      # Step 12: Display Build Information
       - name: Display Build Information
         run: |
           echo "🏗️ Build completed successfully!"
-          echo "📱 APK Location: mobile/android/app/build/outputs/apk/debug/"
+          echo "📱 APK Location: mobile/build/app/outputs/flutter-apk/"
           echo "📦 Artifact Name: android-debug"
           echo "🔄 Retention: 30 days"
           
           # Display APK details
-          for apk in mobile/android/app/build/outputs/apk/debug/*.apk; do
+          cd mobile
+          for apk in build/app/outputs/flutter-apk/*.apk; do
             if [ -f "$apk" ]; then
               echo "📋 APK Details:"
               echo "   File: $(basename "$apk")"
