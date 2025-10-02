@@ -1,0 +1,216 @@
+name: Flutter Build APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'capy/**'
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/flutter-build.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+      - 'capy/**'
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/flutter-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Flutter APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Setup Java (required for Android build)
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      # Cache Flutter dependencies
+      - name: Cache pub dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            mobile/.dart_tool
+            mobile/.packages
+          key: ${{ runner.os }}-pub-${{ hashFiles('mobile/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      # Navigate to mobile directory and get dependencies
+      - name: Get Flutter Dependencies
+        working-directory: mobile
+        run: |
+          flutter --version
+          flutter pub get
+
+      # Run Flutter analyze for code quality
+      - name: Analyze Code
+        working-directory: mobile
+        run: flutter analyze --no-fatal-infos || true
+
+      # Run Flutter format check
+      - name: Check Code Formatting
+        working-directory: mobile
+        run: dart format --set-exit-if-changed . || true
+
+      # Build APK (debug mode for testing)
+      - name: Build Debug APK
+        working-directory: mobile
+        run: flutter build apk --debug --no-tree-shake-icons
+
+      # Build APK (release mode)
+      - name: Build Release APK
+        working-directory: mobile
+        run: |
+          flutter build apk --release --no-tree-shake-icons
+          
+      # Build App Bundle (for Play Store)
+      - name: Build App Bundle
+        working-directory: mobile
+        run: flutter build appbundle --release --no-tree-shake-icons || true
+
+      # Rename APKs with timestamp
+      - name: Rename APK Files
+        working-directory: mobile
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BRANCH_NAME=${GITHUB_REF##*/}
+          
+          # Debug APK
+          if [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
+            mv build/app/outputs/flutter-apk/app-debug.apk \
+               build/app/outputs/flutter-apk/marina-hotel-debug-${BRANCH_NAME}-${TIMESTAMP}.apk
+          fi
+          
+          # Release APK
+          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            mv build/app/outputs/flutter-apk/app-release.apk \
+               build/app/outputs/flutter-apk/marina-hotel-release-${BRANCH_NAME}-${TIMESTAMP}.apk
+          fi
+
+      # Upload Debug APK as artifact
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: debug-apk
+          path: mobile/build/app/outputs/flutter-apk/marina-hotel-debug-*.apk
+          retention-days: 7
+
+      # Upload Release APK as artifact
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-apk
+          path: mobile/build/app/outputs/flutter-apk/marina-hotel-release-*.apk
+          retention-days: 30
+
+      # Upload App Bundle as artifact (if built)
+      - name: Upload App Bundle
+        uses: actions/upload-artifact@v3
+        if: success()
+        continue-on-error: true
+        with:
+          name: app-bundle
+          path: mobile/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      # Comment on PR with build status and download links
+      - name: Comment PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const artifactUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ✅ تم بناء APK بنجاح!\n\n### التحميلات المتاحة:\n- 📱 [Debug APK](${artifactUrl}#artifacts)\n- 🚀 [Release APK](${artifactUrl}#artifacts)\n\n### معلومات البناء:\n- **Flutter Version**: 3.19.0\n- **Build Number**: ${{ github.run_number }}\n- **Commit**: ${{ github.sha }}\n\n> للتحميل، اضغط على الروابط أعلاه ثم اختر الملف المطلوب من قسم Artifacts.`
+            })
+
+  # Job for running tests (optional)
+  test:
+    name: Run Flutter Tests
+    runs-on: ubuntu-latest
+    needs: build
+    continue-on-error: true
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Get Dependencies
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Run Tests
+        working-directory: mobile
+        run: flutter test || true
+
+  # Job for creating release (only on main branch)
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download APKs
+        uses: actions/download-artifact@v3
+        with:
+          path: ./artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Release Build ${{ github.run_number }}
+          body: |
+            ## Marina Hotel App - Build ${{ github.run_number }}
+            
+            ### Changes
+            - Commit: ${{ github.sha }}
+            - Branch: ${{ github.ref_name }}
+            
+            ### Downloads
+            - Debug APK for testing
+            - Release APK for production
+            
+            Built automatically by GitHub Actions.
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/**/*.apk
+            artifacts/**/*.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
