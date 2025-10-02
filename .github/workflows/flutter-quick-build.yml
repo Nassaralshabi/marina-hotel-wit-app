@@ -53,7 +53,7 @@ jobs:
           echo "✅ Release APK built successfully!"
 
       - name: Upload APKs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: marina-hotel-apk-${{ github.event.inputs.build_type }}
           path: mobile/build/app/outputs/flutter-apk/*.apk
