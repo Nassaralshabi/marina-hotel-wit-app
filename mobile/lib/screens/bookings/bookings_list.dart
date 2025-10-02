@@ -104,7 +104,6 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
                   return const EmptyState(
                     title: 'لا توجد حجوزات',
                     message: 'استخدم البحث أو أضف حجزاً جديداً',
-                    icon: Icons.hotel_outlined,
                   );
                 }
 
