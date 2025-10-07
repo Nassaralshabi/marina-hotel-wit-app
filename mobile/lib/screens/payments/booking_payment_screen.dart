@@ -103,7 +103,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
           onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PaymentHistoryScreen(bookingId: widget.booking.localUuid),
+              builder: (context) => PaymentHistoryScreen(),
             ),
           ),
           icon: const Icon(Icons.history),
@@ -598,7 +598,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen>
             () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => PaymentHistoryScreen(bookingId: widget.booking.localUuid),
+                builder: (context) => PaymentHistoryScreen(),
               ),
             ),
           ),

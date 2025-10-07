@@ -1,0 +1,72 @@
+name: Quick Build APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+          - both
+
+jobs:
+  quick-build:
+    name: Quick Build APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+
+      - name: Get Dependencies
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Build Debug APK
+        if: ${{ github.event.inputs.build_type == 'debug' || github.event.inputs.build_type == 'both' }}
+        working-directory: mobile
+        run: |
+          flutter build apk --debug --no-tree-shake-icons
+          echo "✅ Debug APK built successfully!"
+
+      - name: Build Release APK
+        if: ${{ github.event.inputs.build_type == 'release' || github.event.inputs.build_type == 'both' }}
+        working-directory: mobile
+        run: |
+          flutter build apk --release --no-tree-shake-icons
+          echo "✅ Release APK built successfully!"
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-hotel-apk-${{ github.event.inputs.build_type }}
+          path: mobile/build/app/outputs/flutter-apk/*.apk
+          retention-days: 7
+
+      - name: Build Summary
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Type**: ${{ github.event.inputs.build_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Flutter Version**: 3.19.0" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Number**: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### APK Files" >> $GITHUB_STEP_SUMMARY
+          ls -lh mobile/build/app/outputs/flutter-apk/*.apk 2>/dev/null | awk '{print "- "$NF" ("$5")"}' >> $GITHUB_STEP_SUMMARY || echo "No APK files found" >> $GITHUB_STEP_SUMMARY
