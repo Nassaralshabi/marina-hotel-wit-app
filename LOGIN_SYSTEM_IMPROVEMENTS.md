@@ -10,7 +10,7 @@
 ```dart
 class Env {
   // URL الافتراضي للإنتاج
-  static String baseApiUrl = 'http://hotelmarina.com/MARINA_HOTEL_PORTABLE/api/v1';
+  static String baseApiUrl = 'https://hotelmarina.com/MARINA_HOTEL_PORTABLE/api/v1';
   
   // إعدادات بديلة للتطوير
   static String get localApiUrl => 'http://localhost/MARINA_HOTEL_PORTABLE/api/v1';
