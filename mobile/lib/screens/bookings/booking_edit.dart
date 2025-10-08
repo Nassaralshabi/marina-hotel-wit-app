@@ -251,7 +251,7 @@ class _BookingEditScreenState extends ConsumerState<BookingEditScreen> {
                   if (!_formKey.currentState!.validate()) return;
                   final name = _guestName.text.trim();
                   final phone = _guestPhone.text.trim();
-                  final nationality = _guestNationality.text.trim().isEmpty ? 'غير معروف' : _guestNationality.text.trim();
+                  final nationality = _guestNationality.text.trim();
                   final email = _optionalText(_guestEmail.text);
                   final address = _optionalText(_guestAddress.text);
                   final idNumber = _guestIdNumber.text.trim();
