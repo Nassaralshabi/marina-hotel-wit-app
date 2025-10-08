@@ -38,7 +38,7 @@
 ```
 
 **رابط المتابعة:**
-https://github.com/Nassaralshabi/marina-hotel-wit-app/actions/runs/18171974632
+https://github.com/Nassaralshabi/marina-hotel-wit-app/actions
 
 ### 3. 📥 **كيفية التحميل:**
 
