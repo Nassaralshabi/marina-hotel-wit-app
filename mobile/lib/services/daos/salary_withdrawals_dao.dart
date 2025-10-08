@@ -24,6 +24,7 @@ class SalaryWithdrawalsDao extends DatabaseAccessor<AppDatabase> with _$SalaryWi
     final q = select(salaryWithdrawals);
     if (!includeDeleted) q.where((t) => t.deletedAt.isNull());
     if (employeeId != null) q.where((t) => t.employeeId.equals(employeeId));
+    q.orderBy([(t) => OrderingTerm(expression: t.date, mode: OrderingMode.desc)]);
     return q.watch();
   }
 
