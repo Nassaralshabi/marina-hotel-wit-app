@@ -1,28 +1,160 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.marinahotel.kotlin">
 
+    <!-- Required permissions for Marina Hotel app -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
+        tools:ignore="ScopedStorage" 
+        android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
+        android:maxSdkVersion="32" />
+    
+    <!-- Optional permissions for enhanced features -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    
+    <!-- Network security features -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    
     <application
-        android:name=".HotelApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
+        android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MarinaHotelManagement"
+        android:theme="@style/Theme.MarinaHotel"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:hardwareAccelerated="true"
+        android:largeHeap="true"
+        android:usesCleartextTraffic="false"
         tools:targetApi="31">
         
+        <!-- Main Activity -->
         <activity
-            android:name=".ui.MainActivity"
+            android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTask">
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <!-- Dashboard and Main Features -->
+        <activity 
+            android:name=".dashboard.DashboardActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+            
+        <!-- Booking Management -->
+        <activity 
+            android:name=".bookings.BookingsListActivity"
+            android:exported="false"
+            android:parentActivityName=".dashboard.DashboardActivity" />
+        <activity 
+            android:name=".bookings.BookingEditActivity"
+            android:exported="false"
+            android:parentActivityName=".bookings.BookingsListActivity" />
+            
+        <!-- Employee Management -->
+        <activity 
+            android:name=".employees.EmployeesListActivity"
+            android:exported="false"
+            android:parentActivityName=".dashboard.DashboardActivity" />
+            
+        <!-- Expense Management -->
+        <activity 
+            android:name=".expenses.ExpensesListActivity"
+            android:exported="false"
+            android:parentActivityName=".dashboard.DashboardActivity" />
+            
+        <!-- Payment Management -->
+        <activity 
+            android:name=".payments.PaymentsMainActivity"
+            android:exported="false"
+            android:parentActivityName=".dashboard.DashboardActivity" />
+        <activity 
+            android:name=".payments.BookingPaymentActivity"
+            android:exported="false"
+            android:parentActivityName=".payments.PaymentsMainActivity" />
+        <activity 
+            android:name=".payments.BookingCheckoutActivity"
+            android:exported="false"
+            android:parentActivityName=".payments.PaymentsMainActivity" />
+        <activity 
+            android:name=".payments.PaymentHistoryActivity"
+            android:exported="false"
+            android:parentActivityName=".payments.PaymentsMainActivity" />
+        <activity 
+            android:name=".payments.PaymentsListActivity"
+            android:exported="false"
+            android:parentActivityName=".payments.PaymentsMainActivity" />
+            
+        <!-- Finance Management -->
+        <activity 
+            android:name=".finance.FinanceActivity"
+            android:exported="false"
+            android:parentActivityName=".dashboard.DashboardActivity" />
+            
+        <!-- Notes and Communication -->
+        <activity 
+            android:name=".notes.NotesActivity"
+            android:exported="false"
+            android:parentActivityName=".dashboard.DashboardActivity" />
+            
+        <!-- Reports and Analytics -->
+        <activity 
+            android:name=".reports.ReportsActivity"
+            android:exported="false"
+            android:parentActivityName=".dashboard.DashboardActivity" />
+            
+        <!-- Room Management -->
+        <activity 
+            android:name=".rooms.RoomsMainActivity"
+            android:exported="false"
+            android:parentActivityName=".dashboard.DashboardActivity" />
+            
+        <!-- Settings -->
+        <activity 
+            android:name=".settings.SettingsMainActivity"
+            android:exported="false"
+            android:parentActivityName=".dashboard.DashboardActivity" />
+        <activity 
+            android:name=".settings.employees.SettingsEmployeesActivity"
+            android:exported="false"
+            android:parentActivityName=".settings.SettingsMainActivity" />
+        <activity 
+            android:name=".settings.guests.SettingsGuestsActivity"
+            android:exported="false"
+            android:parentActivityName=".settings.SettingsMainActivity" />
+        <activity 
+            android:name=".settings.maintenance.SettingsMaintenanceActivity"
+            android:exported="false"
+            android:parentActivityName=".settings.SettingsMainActivity" />
+        <activity 
+            android:name=".settings.users.SettingsUsersActivity"
+            android:exported="false"
+            android:parentActivityName=".settings.SettingsMainActivity" />
+            
+        <!-- File Provider for secure file sharing -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_provider_paths" />
+        </provider>
     </application>
 
 </manifest>

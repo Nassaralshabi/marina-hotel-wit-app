@@ -1,29 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Marina Hotel - Data Extraction Rules for Android 12+ -->
 <data-extraction-rules>
-    <!--
-        Cloud Backup related rules
-        For more info, see:
-        https://developer.android.com/about/versions/12/backup-restore#xml-changes
-    -->
-    
     <cloud-backup>
         <!-- Exclude sensitive data from cloud backup -->
-        <exclude domain="sharedpref" path="user_credentials.xml" />
-        <exclude domain="database" path="hotel_database" />
+        <exclude domain="database" />
+        <exclude domain="shared_prefs" path="secure_prefs.xml" />
+        <exclude domain="files" path="keystore/" />
+        <exclude domain="files" path="sensitive_data/" />
         
-        <!-- Include only non-sensitive data -->
-        <include domain="sharedpref" path="app_preferences.xml" />
-        <include domain="file" path="settings/" />
+        <!-- Include user preferences (non-sensitive) -->
+        <include domain="shared_prefs" path="user_settings.xml" />
+        <include domain="shared_prefs" path="app_preferences.xml" />
     </cloud-backup>
     
-    <!-- Device Transfer rules -->
     <device-transfer>
-        <!-- Similar rules for device transfer -->
-        <exclude domain="sharedpref" path="user_credentials.xml" />
-        <exclude domain="database" path="hotel_database" />
+        <!-- Rules for device-to-device transfer -->
+        <exclude domain="database" />
+        <exclude domain="shared_prefs" path="secure_prefs.xml" />
+        <exclude domain="files" path="keystore/" />
         
-        <include domain="sharedpref" path="app_preferences.xml" />
-        <include domain="file" path="settings/" />
+        <!-- Allow user settings transfer -->
+        <include domain="shared_prefs" path="user_settings.xml" />
+        <include domain="shared_prefs" path="app_preferences.xml" />
     </device-transfer>
-    
 </data-extraction-rules>

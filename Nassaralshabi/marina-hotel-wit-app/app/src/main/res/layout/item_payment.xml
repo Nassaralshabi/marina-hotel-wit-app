@@ -1,22 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="8dp"
-    android:layout_marginVertical="4dp"
-    app:cardElevation="2dp"
-    app:cardCornerRadius="8dp">
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layoutDirection="rtl"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="12dp"
-        android:gravity="center_vertical">
+        android:padding="16dp">
 
-        <!-- Payment Info -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -24,44 +22,28 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/paymentAmountText"
+                android:id="@+id/paymentTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="100 $"
-                android:textAppearance="@style/AppTextAppearance.TitleMedium"
-                android:textColor="@color/success"
-                tools:text="100 $" />
+                android:text="حجز 101"
+                android:textColor="@color/textPrimary"
+                android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/paymentDateText"
+                android:id="@+id/paymentSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="01/01/2024"
-                android:textAppearance="@style/AppTextAppearance.BodySmall"
-                android:textColor="@color/text_secondary"
-                tools:text="01/01/2024" />
-
-            <TextView
-                android:id="@+id/paymentMethodText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="نقدي"
-                android:textAppearance="@style/AppTextAppearance.BodySmall"
-                android:textColor="@color/text_hint"
-                tools:text="نقدي" />
-
+                android:layout_marginTop="4dp"
+                android:text="بطاقة ائتمان"
+                android:textColor="@color/textSecondary" />
         </LinearLayout>
 
-        <!-- Action Buttons -->
-        <ImageButton
-            android:id="@+id/deletePaymentButton"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/delete"
-            android:contentDescription="@string/desc_delete_button"
-            android:padding="4dp" />
-
+        <TextView
+            android:id="@+id/paymentAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1500 ر.س"
+            android:textColor="@color/primaryColor"
+            android:textStyle="bold" />
     </LinearLayout>
-
 </com.google.android.material.card.MaterialCardView>

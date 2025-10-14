@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🆘 الدعم التقني العام
+    url: https://github.com/Nassaralshabi/marina-hotel-wit-app/discussions
+    about: للأسئلة العامة والمساعدة في الاستخدام
+    
+  - name: 🔒 تقرير أمني خاص
+    url: mailto:nassaralshabi@marina-hotel.com
+    about: للمشاكل الأمنية الحساسة (رجاءً استخدم email مباشر)
+    
+  - name: 📖 التوثيق والأدلة
+    url: https://github.com/Nassaralshabi/marina-hotel-wit-app/wiki
+    about: دليل المستخدم والتوثيق التقني
+    
+  - name: 💬 مجتمع المطورين
+    url: https://github.com/Nassaralshabi/marina-hotel-wit-app/discussions/categories/development
+    about: للنقاش حول التطوير والمساهمات

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Marina Hotel - File Provider Paths Configuration -->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Internal app storage -->
+    <files-path name="internal_files" path="." />
+    
+    <!-- Cache directory for temporary files -->
+    <cache-path name="cache_files" path="." />
+    
+    <!-- External files directory -->
+    <external-files-path name="external_files" path="." />
+    
+    <!-- External cache directory -->
+    <external-cache-path name="external_cache" path="." />
+    
+    <!-- Shared documents directory -->
+    <external-files-path name="documents" path="Documents/" />
+    
+    <!-- Download directory for reports and exports -->
+    <external-files-path name="downloads" path="Downloads/" />
+    
+    <!-- Images and media -->
+    <external-files-path name="images" path="Pictures/" />
+    
+    <!-- Backup files -->
+    <external-files-path name="backups" path="Backups/" />
+</paths>

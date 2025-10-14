@@ -1,0 +1,122 @@
+name: 🐛 Bug Report
+description: Report a bug in Marina Hotel app
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🐛 تقرير مشكلة في تطبيق Marina Hotel
+        
+        شكراً لك لمساعدتنا في تحسين التطبيق! يرجى ملء المعلومات التالية بأكبر قدر من التفاصيل.
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: 📋 وصف المشكلة
+      description: وصف واضح ومختصر للمشكلة التي واجهتها
+      placeholder: ما الذي حدث وما كان متوقعاً أن يحدث؟
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: 🔄 خطوات إعادة المشكلة
+      description: خطوات مفصلة لإعادة إنتاج المشكلة
+      value: |
+        1. انتقل إلى...
+        2. اضغط على...
+        3. قم بـ...
+        4. لاحظ أن...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: ✅ السلوك المتوقع
+      description: ما الذي كان يجب أن يحدث؟
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: ❌ السلوك الفعلي
+      description: ما الذي حدث فعلاً؟
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 🚨 مستوى الخطورة
+      description: ما مدى خطورة هذه المشكلة؟
+      options:
+        - Critical - التطبيق لا يعمل
+        - High - ميزة مهمة لا تعمل
+        - Medium - مشكلة مزعجة لكن يمكن تجاوزها
+        - Low - مشكلة بسيطة أو تحسين مرغوب
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: 📱 إصدار التطبيق
+      description: ما إصدار التطبيق الذي تستخدمه؟
+      placeholder: مثال - v1.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: android-version
+    attributes:
+      label: 🤖 إصدار الأندرويد
+      description: ما إصدار نظام الأندرويد؟
+      placeholder: مثال - Android 12 (API 31)
+    validations:
+      required: true
+
+  - type: input
+    id: device-model
+    attributes:
+      label: 📱 موديل الجهاز
+      description: ما نوع الجهاز المستخدم؟
+      placeholder: مثال - Samsung Galaxy S21, Xiaomi Redmi Note 10
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-logs
+    attributes:
+      label: 📝 رسائل الخطأ
+      description: إذا كانت هناك رسائل خطأ، يرجى نسخها هنا
+      render: shell
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 🖼️ لقطات الشاشة
+      description: أضف صور توضح المشكلة (اسحب وأسقط الصور هنا)
+
+  - type: checkboxes
+    id: additional-info
+    attributes:
+      label: ℹ️ معلومات إضافية
+      description: معلومات أخرى قد تكون مفيدة
+      options:
+        - label: المشكلة تحدث باستمرار
+        - label: المشكلة تحدث أحياناً فقط
+        - label: المشكلة بدأت بعد تحديث التطبيق
+        - label: المشكلة تحدث على أجهزة متعددة
+        - label: أعدت تشغيل التطبيق لكن المشكلة مازالت موجودة
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 🔍 تفاصيل إضافية
+      description: أي معلومات أخرى تعتقد أنها مفيدة؟
