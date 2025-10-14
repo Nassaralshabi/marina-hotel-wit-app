@@ -1,10 +1,10 @@
-name: 🚚 Move NassarAlshabi/marina-hotel-wit-app content to Root
+name: 🚚 Move Nassaralshabi/marina-hotel-wit-app to Root
 
 on:
-  workflow_dispatch:  # تشغيل يدوي من تبويب Actions فقط
+  workflow_dispatch:  # تشغيل يدوي فقط
   push:
     branches:
-      - main  # يعمل فقط عند التحديث على الفرع main
+      - main  # يعمل فقط عند push على main
 
 jobs:
   move-folder:
@@ -14,17 +14,17 @@ jobs:
       - name: 🧱 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🚚 Move contents of NassarAlshabi/marina-hotel-wit-app to root
+      - name: 🚚 Move marina-hotel-wit-app contents to root if exists
         run: |
-          FOLDER="marina-hotel-wit-app"
+          FOLDER="Nassaralshabi/marina-hotel-wit-app"
           if [ -d "$FOLDER" ]; then
-            echo "✅ Moving contents of $FOLDER to root..."
+            echo "✅ Found $FOLDER, moving contents to root..."
             shopt -s dotglob
             mv "$FOLDER"/* .
-            echo "🧹 Removing old folder..."
-            rm -rf "$FOLDER"
+            echo "🧹 Cleaning up..."
+            rm -rf "Nassaralshabi"
           else
-            echo "⚠️ Folder '$FOLDER' not found — skipping."
+            echo "⚠️ Folder $FOLDER not found — skipping."
           fi
 
       - name: ✅ Commit and push changes
@@ -32,5 +32,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Auto-move contents of marina-hotel-wit-app to repository root" || echo "No changes to commit"
+          git commit -m "Auto-move Nassaralshabi/marina-hotel-wit-app contents to repository root" || echo "No changes to commit"
           git push
