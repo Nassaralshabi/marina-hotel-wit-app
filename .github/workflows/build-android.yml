@@ -1,0 +1,105 @@
+name: Build Kotlin Android App (APK)
+
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches:
+      - main
+      - capy*
+    paths:
+      - 'android_app/**'
+      - '.github/workflows/build-android.yml'
+      - 'package.json'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'android_app/**'
+      - '.github/workflows/build-android.yml'
+
+env:
+  ANDROID_BUILD_MODULE: "./android_app"
+  GRADLE_OPTS: "-Dorg.gradle.configuration-cache=true -Dorg.gradle.caching=true -Dkotlin.compiler.execution.strategy='in-process'"
+
+jobs:
+  build-apk:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ${{ env.ANDROID_BUILD_MODULE }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make Gradlew executable
+        run: chmod +x gradlew
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            android_app/.gradle
+            android_app/build
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle*', '**/build.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --scan
+
+      - name: Build Debug APK (backup)
+        run: ./gradlew assembleDebug --scan
+
+      - name: Verify APK output
+        run: |
+          ls -l app/build/outputs/apk/*/ | head -20
+          cp -v app/build/outputs/apk/release/*.apk app-release.apk || true
+          cp -v app/build/outputs/apk/debug/*.apk app-debug.apk || true
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-hotel-release-apk
+          path: android_app/app-release.apk
+          retention-days: 30
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-hotel-debug-apk
+          path: android_app/app-debug.apk
+          retention-days: 30
+
+      - name: Generate Build Report
+        if: always()
+        run: |
+          echo "### Marina Hotel APK Build Summary" > build_report.md
+          echo "- Branch: ${GITHUB_REF#refs/heads/}" >> build_report.md
+          echo "- Commit: ${GITHUB_SHA::7}" >> build_report.md
+          echo "- Build time: $(date -u -Iseconds)" >> build_report.md
+          echo "- APK location: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" >> build_report.md
+          cat build_report.md
+
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-logs
+          path: |
+            ${{ env.ANDROID_BUILD_MODULE }}/build/
+            ~/.gradle/caches/

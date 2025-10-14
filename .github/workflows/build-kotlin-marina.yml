@@ -1,0 +1,168 @@
+name: Build & Release Marina Hotel (Kotlin Android)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+      version_code:
+        description: 'Version code (integer)'
+        required: true
+        default: '1'
+  push:
+    branches:
+      - main
+      - capy*
+    paths:
+      - 'android_app/**'
+      - 'kotlin-marina/**'
+      - '.github/workflows/*android*.yml'
+      - 'MARINA_HOTEL_PORTABLE/**'
+  pull_request:
+    branches:
+      - main
+
+env:
+  GRADLE_MODULE: "./android_app"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
+jobs:
+  build-apk:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: ${{ env.GRADLE_MODULE }}
+
+    steps:
+      - name: Checkout repository (full)
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant execute permission for Gradle wrapper
+        run: chmod +x gradlew
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            **/.gradle
+            **/build
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle*', '**/build.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Run tests
+        run: ./gradlew test lint
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --scan
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Display APK outputs
+        run: |
+          echo "🔍 APK files built:"
+          find app/build/outputs/apk -name "*.apk" -exec ls -lh {} \;
+
+      - name: Sign Release APK (Self-Sign Debug)
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: ${{ env.GRADLE_MODULE }}/app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
+          alias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        if: env.KEYSTORE_BASE64 != ''
+
+      - name: Upload Release APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-hotel-release-signed-apk
+          path: |
+            ${{ env.GRADLE_MODULE }}/app/build/outputs/apk/release/*.apk
+          retention-days: 14
+
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-hotel-debug-apk
+          path: |
+            ${{ env.GRADLE_MODULE }}/app/build/outputs/apk/debug/*.apk
+          retention-days: 7
+
+  build-aab:
+    name: Build Release App Bundle (AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: ${{ env.GRADLE_MODULE }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant execute permission for Gradle wrapper
+        run: chmod +x gradlew
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            **/.gradle
+            **/build
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle*', '**/build.gradle*', '**/gradle-wrapper.properties') }}
+
+      - name: Build Release App Bundle
+        run: ./gradlew bundleRelease
+
+      - name: Display Bundle Output
+        run: |
+          echo "📦 Bundle (AAB) built:"
+          find app/build/outputs/bundle -name "*.aab" -exec ls -lh {} \;
+
+      - name: Sign App Bundle
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: ${{ env.GRADLE_MODULE }}/app/build/outputs/bundle/release
+          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
+          alias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        if: env.KEYSTORE_BASE64 != ''
+
+      - name: Upload Signed AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: marina-hotel-release-aab
+          path: |
+            ${{ env.GRADLE_MODULE }}/app/build/outputs/bundle/release/*.aab
+          retention-days: 14
