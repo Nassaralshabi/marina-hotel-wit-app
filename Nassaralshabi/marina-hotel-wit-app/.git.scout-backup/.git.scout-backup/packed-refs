@@ -1,0 +1,6 @@
+# pack-refs with: peeled fully-peeled sorted 
+c4862ec3d1ebc5058b1bd13b5eb00004808b6b66 refs/remotes/origin/capy/add-kotlin-ci
+bbbb6afafbab086d1a5ab1c29f9435f608ab8db5 refs/remotes/origin/capy/cap-1-56371c5b
+009ef5295f635ef1f063a8bd45685e72a186d97b refs/remotes/origin/main
+2bc4a81938696208019978a67915665ed01b34d8 refs/tags/v1.1.0
+^f1b4b1465f61e94c185b95e9a275fb58e4e09161

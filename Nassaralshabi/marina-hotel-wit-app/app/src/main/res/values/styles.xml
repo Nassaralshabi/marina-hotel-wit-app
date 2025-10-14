@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material Design 3 specific styles -->
+    
+    <!-- Button Styles -->
+    <style name="MaterialButton.Primary" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/primary</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="cornerRadius">6dp</item>
+    </style>
+
+    <style name="MaterialButton.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="strokeColor">@color/primary</item>
+        <item name="android:textColor">@color/primary</item>
+        <item name="cornerRadius">6dp</item>
+    </style>
+
+    <style name="MaterialButton.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/primary</item>
+    </style>
+
+    <!-- TextInput Styles -->
+    <style name="MaterialTextInput.Outlined" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/primary</item>
+        <item name="hintTextColor">@color/text_hint</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+    </style>
+
+    <style name="MaterialTextInput.Filled" parent="Widget.Material3.TextInputLayout.FilledBox">
+        <item name="boxBackgroundColor">@color/surface_variant</item>
+        <item name="hintTextColor">@color/text_hint</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+    </style>
+
+    <!-- Card Styles -->
+    <style name="MaterialCard.Elevated" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/surface</item>
+        <item name="cardElevation">4dp</item>
+        <item name="cardCornerRadius">12dp</item>
+    </style>
+
+    <style name="MaterialCard.Outlined" parent="Widget.Material3.CardView.Outlined">
+        <item name="cardBackgroundColor">@color/surface</item>
+        <item name="strokeColor">@color/divider</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="cardCornerRadius">8dp</item>
+    </style>
+
+    <!-- Dialog Styles -->
+    <style name="MaterialDialog" parent="Theme.Material3.DayNight.Dialog">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="android:background">@color/surface</item>
+    </style>
+
+    <!-- Snackbar Styles -->
+    <style name="MaterialSnackbar" parent="Widget.Material3.Snackbar">
+        <item name="android:background">@color/surface</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- Chip Styles -->
+    <style name="MaterialChip" parent="Widget.Material3.Chip.Suggestion">
+        <item name="chipIconTint">@color/primary</item>
+        <item name="checkedIconTint">@color/primary</item>
+        <item name="chipStrokeColor">@color/primary</item>
+    </style>
+
+    <!-- FAB Styles -->
+    <style name="MaterialFAB" parent="Widget.Material3.FloatingActionButton.Tertiary">
+        <item name="backgroundTint">@color/primary</item>
+        <item name="tint">@android:color/white</item>
+        <item name="elevation">6dp</item>
+    </style>
+</resources>
