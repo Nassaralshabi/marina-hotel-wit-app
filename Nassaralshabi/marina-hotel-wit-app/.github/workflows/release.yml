@@ -1,0 +1,86 @@
+name: Release Android Hotel Management App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
+      
+    - name: Build Release APK
+      run: ./gradlew assembleRelease
+      
+    - name: Sign APK
+      uses: r0adkll/sign-android-release@v1
+      with:
+        releaseDirectory: app/build/outputs/apk/release
+        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+        alias: ${{ secrets.ALIAS }}
+        keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+        keyPassword: ${{ secrets.KEY_PASSWORD }}
+        
+    - name: Upload Release APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release-signed
+        path: app/build/outputs/apk/release/app-release-signed.apk
+        
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Hotel Management App ${{ github.ref }}
+        body: |
+          # Marina Hotel Android Management App
+          
+          ## Features
+          - Complete hotel booking management system
+          - Real-time room availability tracking
+          - Comprehensive payment processing
+          - Arabic localization support
+          - Modern MVVM architecture with Room database
+          - Material Design 3 UI
+          - Professional reporting system
+          
+          ## Installation
+          1. Download the APK file below
+          2. Enable "Unknown Sources" in device settings
+          3. Install the APK
+          4. Launch the app and configure your hotel settings
+          
+          ## Notes
+          - First-time setup includes database initialization
+          - All data is stored locally on the device
+          - Regular backups recommended for critical data
+        draft: false
+        prerelease: false

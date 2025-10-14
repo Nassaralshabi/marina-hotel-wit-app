@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/loginFragment">
+
+    <!-- Login Fragment -->
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.marina.hotelmanagement.ui.fragments.LoginFragment"
+        android:label="@string/login_title"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_login_to_dashboard"
+            app:destination="@id/dashboardFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <!-- Dashboard Fragment -->
+    <fragment
+        android:id="@+id/dashboardFragment"
+        android:name="com.marina.hotelmanagement.ui.fragments.DashboardFragment"
+        android:label="@string/dashboard_title"
+        tools:layout="@layout/fragment_dashboard">
+        <action
+            android:id="@+id/action_dashboard_to_add_booking"
+            app:destination="@id/addEditBookingFragment" />
+        <action
+            android:id="@+id/action_dashboard_to_booking_details"
+            app:destination="@id/bookingDetailsFragment" />
+    </fragment>
+
+    <!-- Add/Edit Booking Fragment -->
+    <fragment
+        android:id="@+id/addEditBookingFragment"
+        android:name="com.marina.hotelmanagement.ui.fragments.AddEditBookingFragment"
+        android:label="@string/booking_title"
+        tools:layout="@layout/fragment_add_edit_booking" />
+
+    <!-- Booking Details Fragment -->
+    <fragment
+        android:id="@+id/bookingDetailsFragment"
+        android:name="com.marina.hotelmanagement.ui.fragments.BookingDetailsFragment"
+        android:label="تفاصيل الحجز"
+        tools:layout="@layout/fragment_booking_details">
+        <action
+            android:id="@+id/action_booking_details_to_payment"
+            app:destination="@id/paymentFragment" />
+    </fragment>
+
+    <!-- Payment Fragment -->
+    <fragment
+        android:id="@+id/paymentFragment"
+        android:name="com.marina.hotelmanagement.ui.fragments.PaymentFragment"
+        android:label="@string/payment_title"
+        tools:layout="@layout/fragment_payment" />
+
+    <!-- Reports Fragment -->
+    <fragment
+        android:id="@+id/reportsFragment"
+        android:name="com.marina.hotelmanagement.ui.fragments.ReportsFragment"
+        android:label="@string/reports_title"
+        tools:layout="@layout/fragment_reports" />
+
+    <!-- Expenses Fragment -->
+    <fragment
+        android:id="@+id/expensesFragment"
+        android:name="com.marina.hotelmanagement.ui.fragments.ExpensesFragment"
+        android:label="@string/expenses_title"
+        tools:layout="@layout/fragment_expenses" />
+
+    <!-- Users Fragment -->
+    <fragment
+        android:id="@+id/usersFragment"
+        android:name="com.marina.hotelmanagement.ui.fragments.UsersFragment"
+        android:label="@string/users_title"
+        tools:layout="@layout/fragment_users" />
+
+</navigation>

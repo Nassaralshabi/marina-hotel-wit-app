@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Text Appearances for Material 3 -->
+    
+    <!-- H1 - Display Large -->
+    <style name="AppTextAppearance.DisplayLarge" parent="TextAppearance.Material3.DisplayLarge">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- H2 - Display Medium -->
+    <style name="AppTextAppearance.DisplayMedium" parent="TextAppearance.Material3.DisplayMedium">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- H3 - Display Small -->
+    <style name="AppTextAppearance.DisplaySmall" parent="TextAppearance.Material3.DisplaySmall">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- H4 - Headline Large -->
+    <style name="AppTextAppearance.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- H5 - Headline Medium -->
+    <style name="AppTextAppearance.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- H6 - Headline Small -->
+    <style name="AppTextAppearance.HeadlineSmall" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Body - Title Large -->
+    <style name="AppTextAppearance.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Body - Title Medium -->
+    <style name="AppTextAppearance.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Body - Title Small -->
+    <style name="AppTextAppearance.TitleSmall" parent="TextAppearance.Material3.TitleSmall">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Body - Body Large -->
+    <style name="AppTextAppearance.Body" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Body - Body Medium -->
+    <style name="AppTextAppearance.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Body - Body Small -->
+    <style name="AppTextAppearance.BodySmall" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Label - Label Large -->
+    <style name="AppTextAppearance.Label" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Label - Label Medium -->
+    <style name="AppTextAppearance.LabelMedium" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Label - Label Small -->
+    <style name="AppTextAppearance.LabelSmall" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Specific styling for different UI elements -->
+    
+    <!-- App Title -->
+    <style name="AppTextAppearance.AppTitle">
+        <item name="android:textSize">32sp</item>
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- Screen Title -->
+    <style name="AppTextAppearance.ScreenTitle">
+        <item name="android:textSize">24sp</item>
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- Card Title -->
+    <style name="AppTextAppearance.CardTitle">
+        <item name="android:textSize">18sp</item>
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- Room Number -->
+    <style name="AppTextAppearance.RoomNumber">
+        <item name="android:textSize">20sp</item>
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <!-- Status Text -->
+    <style name="AppTextAppearance.Status">
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <!-- Error Text -->
+    <style name="AppTextAppearance.Error">
+        <item name="android:textSize">12sp</item>
+        <item name="android:fontFamily">@font/tajawal</item>
+        <item name="fontFamily">@font/tajawal</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textColor">@color/danger</item>
+    </style>
+</resources>
