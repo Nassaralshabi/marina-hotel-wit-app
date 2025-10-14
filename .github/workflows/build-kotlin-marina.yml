@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: android_app
+        working-directory: kotlin-marina 
 
     steps:
       - name: Checkout
@@ -61,5 +61,5 @@ jobs:
         with:
           name: marina-hotel-${{ (inputs.variant || 'debug') }}-apk
           path: |
-            android_app/app/build/outputs/apk/${{ (inputs.variant || 'debug') }}/*.apk
+            kotlin-marina/app/build/outputs/apk/${{ (inputs.variant || 'debug') }}/*.apk
           retention-days: 14
