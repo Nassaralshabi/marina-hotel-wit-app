@@ -1,0 +1,36 @@
+name: 🚚 Move NassarAlshabi/marina-hotel-wit-app content to Root
+
+on:
+  workflow_dispatch:  # تشغيل يدوي من تبويب Actions فقط
+  push:
+    branches:
+      - main  # يعمل فقط عند التحديث على الفرع main
+
+jobs:
+  move-folder:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧱 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🚚 Move contents of NassarAlshabi/marina-hotel-wit-app to root
+        run: |
+          FOLDER="marina-hotel-wit-app"
+          if [ -d "$FOLDER" ]; then
+            echo "✅ Moving contents of $FOLDER to root..."
+            shopt -s dotglob
+            mv "$FOLDER"/* .
+            echo "🧹 Removing old folder..."
+            rm -rf "$FOLDER"
+          else
+            echo "⚠️ Folder '$FOLDER' not found — skipping."
+          fi
+
+      - name: ✅ Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Auto-move contents of marina-hotel-wit-app to repository root" || echo "No changes to commit"
+          git push
