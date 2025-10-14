@@ -1,0 +1,33 @@
+name: Clean Old Artifacts
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install GitHub CLI
+        run: sudo apt update && sudo apt install gh -y
+
+      - name: Delete old artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "Fetching all artifacts..."
+          artifacts=$(gh api repos/$REPO/actions/artifacts --paginate --jq '.artifacts[].id')
+
+          for artifact_id in $artifacts; do
+            echo "Deleting artifact ID: $artifact_id"
+            gh api --method DELETE repos/$REPO/actions/artifacts/$artifact_id >/dev/null
+          done
+
+          echo "تم حذف كل الـ artifacts القديمة."

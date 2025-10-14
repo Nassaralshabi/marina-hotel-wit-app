@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <!--
+        Cloud Backup related rules
+        For more info, see:
+        https://developer.android.com/about/versions/12/backup-restore#xml-changes
+    -->
+    
+    <cloud-backup>
+        <!-- Exclude sensitive data from cloud backup -->
+        <exclude domain="sharedpref" path="user_credentials.xml" />
+        <exclude domain="database" path="hotel_database" />
+        
+        <!-- Include only non-sensitive data -->
+        <include domain="sharedpref" path="app_preferences.xml" />
+        <include domain="file" path="settings/" />
+    </cloud-backup>
+    
+    <!-- Device Transfer rules -->
+    <device-transfer>
+        <!-- Similar rules for device transfer -->
+        <exclude domain="sharedpref" path="user_credentials.xml" />
+        <exclude domain="database" path="hotel_database" />
+        
+        <include domain="sharedpref" path="app_preferences.xml" />
+        <include domain="file" path="settings/" />
+    </device-transfer>
+    
+</data-extraction-rules>
