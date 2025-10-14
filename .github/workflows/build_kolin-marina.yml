@@ -17,29 +17,26 @@ jobs:
       ANDROID_HOME: /usr/local/lib/android/sdk
     steps:
       - name: Checkout repository
-        [span_0](start_span)uses: actions/checkout@v4[span_0](end_span)
+        uses: actions/checkout@v4
 
       - name: Set up Java 17
-        [span_1](start_span)uses: actions/setup-java@v4[span_1](end_span)
+        uses: actions/setup-java@v4
         with:
-          [span_2](start_span)distribution: 'temurin'[span_2](end_span)
-          [span_3](start_span)java-version: '17'[span_3](end_span)
-          [span_4](start_span)cache: 'gradle'[span_4](end_span)
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
 
       - name: Prepare Android SDK
         working-directory: kotlin-marina
         run: echo "sdk.dir=${ANDROID_SDK_ROOT}" > local.properties
 
-      # **التعديل هنا: تم استبدال gradle/gradle-build-action بالإجراء الجديد setup-gradle**
-      # **هذا يزيل تحذير "Deprecated functionality"**
+      # هذا هو السطر 18 تقريباً. تم التأكد من صحة المسافة البادئة.
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
-        # تم إزالة build-root-directory: kotlin-marina لأن الإجراء الجديد يعتمد
-        # على working-directory في خطوات التشغيل التالية كما هو معمول به.
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-        [span_5](start_span)working-directory: kotlin-marina[span_5](end_span)
+        working-directory: kotlin-marina
 
       - name: Assemble Debug
         run: ./gradlew --no-daemon assembleDebug
@@ -50,21 +47,21 @@ jobs:
         working-directory: kotlin-marina
 
       - name: Upload APK
-        [span_6](start_span)if: always()[span_6](end_span)
-        [span_7](start_span)continue-on-error: true[span_7](end_span)
-        [span_8](start_span)uses: actions/upload-artifact@v4[span_8](end_span)
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
         with:
-          [span_9](start_span)name: kotlin-marina-app-debug-apk[span_9](end_span)
-          [span_10](start_span)path: kotlin-marina/app/build/outputs/apk/debug/*.apk[span_10](end_span)
-          [span_11](start_span)retention-days: 1[span_11](end_span)
+          name: kotlin-marina-app-debug-apk
+          path: kotlin-marina/app/build/outputs/apk/debug/*.apk
+          retention-days: 1
 
       - name: Upload Lint Reports
-        [span_12](start_span)if: always()[span_12](end_span)
-        [span_13](start_span)continue-on-error: true[span_13](end_span)
-        [span_14](start_span)uses: actions/upload-artifact@v4[span_14](end_span)
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
         with:
-          [span_15](start_span)name: kotlin-marina-lint-reports[span_15](end_span)
+          name: kotlin-marina-lint-reports
           path: |
-            [span_16](start_span)kotlin-marina/app/build/reports/**[span_16](end_span)
-            [span_17](start_span)kotlin-marina/app/build/outputs/lint-results*.*[span_17](end_span)
-          [span_18](start_span)retention-days: 1[span_18](end_span)
+            kotlin-marina/app/build/reports/**
+            kotlin-marina/app/build/outputs/lint-results*.*
+          retention-days: 1
