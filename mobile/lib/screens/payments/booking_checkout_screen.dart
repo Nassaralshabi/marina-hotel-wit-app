@@ -127,7 +127,7 @@ class _BookingCheckoutScreenState extends ConsumerState<BookingCheckoutScreen> {
                                   const SizedBox(height: 6),
                                   _buildSummaryRow('إجمالي المدفوع', totalPaid, Colors.green),
                                   const SizedBox(height: 6),
-                                  _buildSummaryRow('المتبقي', remainingAmount, remainingAmount <= 0 ? Colors.green : Colors.red),
+                                  _buildSummaryRow('المتبقي', remainingAmount.toDouble(), remainingAmount <= 0 ? Colors.green : Colors.red),
                                 ],
                               ),
                             ),
